@@ -1,7 +1,384 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 1 here
-	</body>
+<!doctype html>
+
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="author" content="Monica Tang">
+
+	<style>
+		*{
+			font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+		}
+		p, ul, li {
+			line-height: 1.5;
+		}
+		body {
+			margin: 18%;
+			margin-top: 5%;
+			margin-bottom: 5%;
+		}
+		.toc {
+			margin-top: -16px;
+			font-size: small;
+		}
+		img {
+			margin: 5px;
+		}
+		figure {
+			margin: 5px;
+		}
+		figcaption{
+			text-align: center;
+		}
+		.gallery {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			overflow-x: visible;
+		}
+		.credit {
+			text-align: right;
+			margin-top: 0%;
+			color: dimgray;
+			font-size: small;
+		}
+		.vl {
+			border-left: 1px solid black;
+			height: 240px;
+		}
+		.code-block {
+			font-family: monospace;
+		}
+		.code-container {
+			display: flex;
+			justify-content: center;
+		}
+		code {
+			font-family: Consolas,"courier new";
+			color: crimson;
+			background-color: #f1f1f1;
+			padding: 2px;
+			font-size: 105%;
+		}
+	</style>
+
+</head>
+
+<body>
+<h1 align="middle">Project 1: Rasterizer</h1>
+<h3 align="middle">CS 184: Computer Graphics and Imaging, Spring 2022</h3>
+<h2 align="middle">Monica Tang</h2>
+
+<hr>
+<h4>Table of Contents:</h4>
+<p class="toc">
+	&emsp; <a href="#overview">Overview</a> <br>
+	&emsp; <a href="#section-1">Rasterization</a> <br>
+	&emsp; &emsp;<a href="#task-1">Drawing Single-Color Triangles</a> <br>
+	&emsp; &emsp;<a href="#task-2">Antialiasing by Supersampling</a> <br>
+	&emsp; &emsp;<a href="#task-3">Transforms</a> <br>
+	&emsp; <a href="#section-2">Sampling</a> <br>
+	&emsp; &emsp;<a href="#task-4">Barycentric Coordinates</a> <br>
+	&emsp; &emsp;<a href="#task-5">"Pixel Sampling" for Texture Mapping</a> <br>
+	&emsp; &emsp;<a href="#task-6">"Level Sampling" with Mipmaps for Texture Mapping</a> <br>
+</p>
+<hr>
+<h2 id="overview">Overview</h2>
+<p>
+	The goal of this project is to implement a simple rasterizer
+	that can draw triangles, perform supersampling, perform hierarchical transforms, and texture map with antialiasing.
+	This project reinforced my understanding of the rasterization pipeline
+	and general concepts relating to sampling and barycentric coordinates.
+</p>
+
+<h2 id="section-1">Rasterization</h2>
+<h3 id="task-1">Drawing Single-Color Triangles</h3>
+<p>
+	In this part, we want to rasterize a triangle with a single color. For now, we will have 1 sample per pixel.
+	The main challenge is to determine if a pixel is within the triangle or not.
+	Since a triangle is the intersection of three half-planes and its three vertices can define three lines,
+	we can check that the point is in the triangle by simply checking that is on the same side of each of the triangle's edges.
+	The following figures describe the mathematical formulae used for the point-in-triangle test.
+</p>
+<div class="gallery">
+	<figure>
+		<img src="img/lec2_slide-47.jpeg" width="400">
+		<figcaption></figcaption>
+	</figure>
+	<figure>
+		<img src="img/lec2_slide-51.jpeg" width="400">
+		<figcaption></figcaption>
+	</figure>
+</div>
+<p class="credit" style="margin-top: -2%">Credit: CS184/284A Lecture 2 Slides by Ren Ng</p>
+
+<p>
+	To make our code more efficient, instead of performing a point-in-triangle test for all pixels in the framebuffer,
+	we will only search within the bounding box of the triangle.
+	For example, in the figures above, the boundary of the grid is the bounding box,
+	and we would perform point-in-triangle tests for each sample (black dot).
+</p>
+
+<p>
+	The following are several examples using the above method:
+</p>
+
+<div class="gallery">
+	<figure>
+		<img src="results/task1_svg3.png" width="400">
+		<figcaption>svg3</figcaption>
+	</figure>
+	<figure>
+		<img src="results/task2_svg4_1.png" width="400">
+		<figcaption>svg4</figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/task2_svg5_1.png" width="400">
+		<figcaption>svg5</figcaption>
+	</figure>
+	<figure>
+		<img src="results/task1_svg6.png" width="400">
+		<figcaption>svg6</figcaption>
+	</figure>
+</div>
+<p>
+	Notice that in "svg4" the skinny pink triangle is broken,
+	and in "svg5", the edges of the cube are jagged.
+	This is a result of aliasing.
+</p>
+
+<h3 id="task-2">Antialiasing by Supersampling</h3>
+<p>
+	As shown in the previous part, some of our results were aliased.
+	In this part, we will use supersampling to antialias the triangles.
+	This means we will sample multiple locations within a pixel and average their values.
+	This is useful because it approximates the effect of a 1-pixel box filter and filters out high frequencies.
+</p>
+<p>
+	The supersampling algorithm is similar to the method from the previous part.
+	The main difference is that instead of sampling 1 time per pixel,
+	we will uniformly sample N x N (= sampling rate) times per pixel.
+	This effectively increases the resolution of our image.
+	Since we have a lot more information to keep track of than in the sampling rate=1 case,
+	we will need an array (which we will call the sample_buffer) that stores the Color information of all our samples.
+	Once we have filled the sample_buffer with all the data we need,
+	to resolve the sample_buffer to the framebuffer (i.e. downsample the sample_buffer to fit the resolution of the framebuffer),
+	we average the colors of each pixel's N x N samples.
+	The following figures illustrate this averaging process.
+</p>
+<div class="gallery">
+	<figure>
+		<img src="img/lec3_slide-97.jpeg" width="400">
+		<figcaption></figcaption>
+	</figure>
+	<figure>
+		<img src="img/lec3_slide-100.jpeg" width="400">
+		<figcaption></figcaption>
+	</figure>
+</div>
+<p class="credit" style="margin-top: -2%">Credit: CS184/284A Lecture 3 Slides by Ren Ng</p>
+
+<p>
+	The result will have less jaggies (jagged/pixelated edges). We can see this from the examples below.
+	As the sampling rate is increased, the result becomes "smoother" and less aliased.
+	Notice that for the skinny pink triangle, it is no longer broken at higher sampling rates.
+	This is because supersampling filters out high frequencies.
+</p>
+
+<div class="gallery">
+	<figure>
+		<img src="results/task2_svg4_1.png" width="275">
+		<figcaption>Sample Rate: 1</figcaption>
+	</figure>
+	<figure>
+		<img src="results/task2_svg4_4.png" width="275">
+		<figcaption>Sample Rate: 4</figcaption>
+	</figure>
+	<figure>
+		<img src="results/task2_svg4_16.png" width="275">
+		<figcaption>Sample Rate: 16</figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/task2_svg5_1.png" width="275">
+		<figcaption>Sample Rate: 1</figcaption>
+	</figure>
+	<figure>
+		<img src="results/task2_svg5_4.png" width="275">
+		<figcaption>Sample Rate: 4</figcaption>
+	</figure>
+	<figure>
+		<img src="results/task2_svg5_16.png" width="275">
+		<figcaption>Sample Rate: 16</figcaption>
+	</figure>
+</div>
+
+
+<h3 id="task-3">Transforms</h3>
+<p>
+	Affine transformations (e.g. translation, scale, rotation) can be expressed in 3x3 matrices using homogeneous coordinates.
+</p>
+<div class="gallery">
+	<figure>
+		<img src="img/lec4_slide-26.jpeg" width="500">
+		<figcaption></figcaption>
+	</figure>
+</div>
+<p class="credit" style="margin-top: 0%">Credit: CS184/284A Lecture 4 Slides by Ren Ng</p>
+
+<p>
+	A sequence of transformations are applied to various shapes in the following images to pose a robot.
+	The order of transformation matters because matrix multiplication is not commutative.
+	We are also able to hierarchically transform the shapes and transform multiple shapes at once.
+</p>
+<div class="gallery">
+	<figure>
+		<img src="results/task3_robot_original.png" width="400">
+		<figcaption>Original Robot</figcaption>
+	</figure>
+	<figure>
+		<img src="results/task3_my_robot.png" width="400">
+		<figcaption>My Robot</figcaption>
+	</figure>
+</div>
+
+<h2 id="section-2">Sampling</h2>
+
+
+<h3 id="task-4">Barycentric Coordinates</h3>
+<p>
+	Barycentric coordinates are a coordinate system to express points in a triangle (in the 2D case.)
+	Each point in the triangle is expressed with (alpha, beta, gamma);
+	these values represent the proportional distances of a point and each vertex to the vertex's opposite edge.
+	The left figure below illustrates this idea.
+	The right figure details how to compute the barycentric coordinates of a point (x, y).
+</p>
+<div class="gallery">
+	<figure>
+		<img src="img/lec5_slide-21.jpeg" width="400">
+		<figcaption></figcaption>
+	</figure>
+	<figure>
+		<img src="img/lec5_slide-22.jpeg" width="400">
+		<figcaption></figcaption>
+	</figure>
+</div>
+<p class="credit" style="margin-top: 0%">Credit: CS184/284A Lecture 5 Slides by Ren Ng</p>
+<p>
+	Barycentric coordinates have many use cases.
+	As shown below, we can use barycentric coordinates to interpolate color.
+	Each vertex V_A, V_B, and V_C represents an RGB color.
+	The color for each point in the interior of the triangle is then defined as a function of its barycentric coordinate.
+	This will be helpful when we implement texture mapping (in the following parts).
+</p>
+<div class="gallery">
+	<figure>
+		<img src="img/lec5_slide-18.jpeg" width="500">
+		<figcaption></figcaption>
+	</figure>
+</div>
+<p class="credit" style="margin-top: 0%">Credit: CS184/284A Lecture 5 Slides by Ren Ng</p>
+<p>
+	The following is another example that uses barycentric coordinates to interpolate color.
+</p>
+<div class="gallery">
+	<figure>
+		<img src="results/task4_svg7_1.png" width="500">
+		<figcaption>Sample Rate: 1</figcaption>
+	</figure>
+</div>
+
+<h3 id="task-5">"Pixel Sampling" for Texture Mapping</h3>
+
+<div class="gallery">
+	<figure>
+		<img src="results/task5_nearest_1.png" width="400">
+		<figcaption>Nearest sampling at 1 sample per pixel</figcaption>
+	</figure>
+	<figure>
+		<img src="results/task5_nearest_16.png" width="400">
+		<figcaption>Nearest sampling at 16 samples per pixel</figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/task5_bilinear_1.png" width="400">
+		<figcaption>Bilinear sampling at 1 sample per pixel</figcaption>
+	</figure>
+	<figure>
+		<img src="results/task5_bilinear_16.png" width="400">
+		<figcaption>Bilinear sampling at 16 samples per pixel</figcaption>
+	</figure>
+</div>
+
+<h3 id="task-6">"Level Sampling" with Mipmaps for Texture Mapping</h3>
+<div class="gallery">
+	<figure>
+		<img src="results/task6_grid_L0_Pnear.png" width="400">
+		<figcaption>Level Sampling: Zero <br> Pixel Sampling: Nearest</figcaption>
+	</figure>
+	<figure>
+		<img src="results/task6_grid_L0_Plin.png" width="400">
+		<figcaption>Level Sampling: Zero <br> Pixel Sampling: Linear</figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/task6_grid_Lnear_Pnear.png" width="400">
+		<figcaption>Level Sampling: Nearest <br> Pixel Sampling: Nearest</figcaption>
+	</figure>
+	<figure>
+		<img src="results/task6_grid_Lnear_Plin.png" width="400">
+		<figcaption>Level Sampling: Nearest <br> Pixel Sampling: Linear</figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/task6_grid_Llin_Pnear.png" width="400">
+		<figcaption>Level Sampling: Linear <br> Pixel Sampling: Nearest</figcaption>
+	</figure>
+	<figure>
+		<img src="results/task6_grid_Llin_Plin.png" width="400">
+		<figcaption>Level Sampling: Linear <br> Pixel Sampling: Linear</figcaption>
+	</figure>
+</div>
+
+
+<div class="gallery">
+	<figure>
+		<img src="results/task6_brick_L0_Pnear.png" width="400">
+		<figcaption>Level Sampling: Zero <br> Pixel Sampling: Nearest</figcaption>
+	</figure>
+	<figure>
+		<img src="results/task6_brick_L0_Plin.png" width="400">
+		<figcaption>Level Sampling: Zero <br> Pixel Sampling: Linear</figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/task6_brick_Lnear_Pnear.png" width="400">
+		<figcaption>Level Sampling: Nearest <br> Pixel Sampling: Nearest</figcaption>
+	</figure>
+	<figure>
+		<img src="results/task6_brick_Lnear_Plin.png" width="400">
+		<figcaption>Level Sampling: Nearest <br> Pixel Sampling: Linear</figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/task6_brick_Llin_Pnear.png" width="400">
+		<figcaption>Level Sampling: Linear <br> Pixel Sampling: Nearest</figcaption>
+	</figure>
+	<figure>
+		<img src="results/task6_brick_Llin_Plin.png" width="400">
+		<figcaption>Level Sampling: Linear <br> Pixel Sampling: Linear</figcaption>
+	</figure>
+</div>
+
+
+</body>
 </html>
