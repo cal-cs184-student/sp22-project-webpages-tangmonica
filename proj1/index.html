@@ -89,7 +89,7 @@
 	The goal of this project is to implement a simple rasterizer
 	that can draw triangles, perform supersampling, perform hierarchical transforms, and texture map with antialiasing.
 	This project reinforced my understanding of the rasterization pipeline
-	and general concepts relating to sampling and barycentric coordinates.
+	and general concepts relating to sampling.
 </p>
 
 <h2 id="section-1">Rasterization</h2>
@@ -117,7 +117,7 @@
 	To make our code more efficient, instead of performing a point-in-triangle test for all pixels in the framebuffer,
 	we will only search within the bounding box of the triangle.
 	For example, in the figures above, the boundary of the grid is the bounding box,
-	and we would perform point-in-triangle tests for each sample (black dot).
+	and we would perform point-in-triangle tests for each sample in the grid (black dots).
 </p>
 
 <p>
@@ -145,17 +145,17 @@
 	</figure>
 </div>
 <p>
-	Notice that in "svg4" the skinny pink triangle is broken,
+	Notice that in "svg4" the skinny pink triangle is disconnected,
 	and in "svg5", the edges of the cube are jagged.
-	This is a result of aliasing.
+	This is due to aliasing.
 </p>
 
 <h3 id="task-2">Antialiasing by Supersampling</h3>
 <p>
 	As shown in the previous part, some of our results were aliased.
-	In this part, we will use supersampling to antialias the triangles.
+	Supersampling will allow us to perform antialiasing.
 	This means we will sample multiple locations within a pixel and average their values.
-	This is useful because it approximates the effect of a 1-pixel box filter and filters out high frequencies.
+	Supersampling approximates the effect of a 1-pixel box filter, filtering out high frequencies.
 </p>
 <p>
 	The supersampling algorithm is similar to the method from the previous part.
@@ -163,7 +163,7 @@
 	we will uniformly sample N x N (= sampling rate) times per pixel.
 	This effectively increases the resolution of our image.
 	Since we have a lot more information to keep track of than in the sampling rate=1 case,
-	we will need an array (which we will call the sample_buffer) that stores the Color information of all our samples.
+	we will need an array (which we will call the sample_buffer) that stores the color information of all our samples.
 	Once we have filled the sample_buffer with all the data we need,
 	to resolve the sample_buffer to the framebuffer (i.e. downsample the sample_buffer to fit the resolution of the framebuffer),
 	we average the colors of each pixel's N x N samples.
@@ -184,8 +184,8 @@
 <p>
 	The result will have less jaggies (jagged/pixelated edges). We can see this from the examples below.
 	As the sampling rate is increased, the result becomes "smoother" and less aliased.
-	Notice that for the skinny pink triangle, it is no longer broken at higher sampling rates.
-	This is because supersampling filters out high frequencies.
+	Notice that for the skinny pink triangle, it is no longer disconnected when sampled at higher sampling rates.
+	This is one example of how supersampling (and antialiasing in general) can be useful.
 </p>
 
 <div class="gallery">
@@ -253,7 +253,7 @@
 <p>
 	Barycentric coordinates are a coordinate system to express points in a triangle (in the 2D case.)
 	Each point in the triangle is expressed with (alpha, beta, gamma);
-	these values represent the proportional distances of a point and each vertex to the vertex's opposite edge.
+	each of these values represents the proportional distance of a point and a vertex to the vertex's opposite edge.
 	The left figure below illustrates this idea.
 	The right figure details how to compute the barycentric coordinates of a point (x, y).
 </p>
@@ -271,8 +271,8 @@
 <p>
 	Barycentric coordinates have many use cases.
 	As shown below, we can use barycentric coordinates to interpolate color.
-	Each vertex V_A, V_B, and V_C represents an RGB color.
-	The color for each point in the interior of the triangle is then defined as a function of its barycentric coordinate.
+	Each vertex V_A, V_B, and V_C represents an RGB color,
+	and the color for each point in the interior of the triangle is then defined as a function of its barycentric coordinates.
 	This will be helpful when we implement texture mapping (in the following parts).
 </p>
 <div class="gallery">
@@ -293,7 +293,33 @@
 </div>
 
 <h3 id="task-5">"Pixel Sampling" for Texture Mapping</h3>
-
+<p>
+	Previously, we could color triangles with a solid color or with a gradient.
+	Now, suppose we want triangles with different patterns or images. This requires us to sample from a texture map.
+	When we map a texture onto a triangle, we need to sample from the texture space to retrieve the color we want to display.
+	The barycentric coordinates of a point can be used in both the xy screen space and uv texture space,
+	but the screen space and texture space may not be one-to-one mappings.
+	In other words, each screen pixel sample may not correspond to one texel (texture pixel).
+	We then need texture filtering techniques in order to calculate the sample colors from the texels.
+	Nearest neighbor and bilinear interpolation are two commonly-used methods.
+</p>
+<p>
+	Nearest neighbor interpolation finds the closest texel to sample from.
+	Meanwhile, bilinear interpolation looks at the four neighboring texels and interpolates their colors.
+	The diagram below shows more information.
+</p>
+<div class="gallery">
+	<figure>
+		<img src="img/lec5_slide-55.jpeg" width="500">
+		<figcaption>Bilinear Interpolation</figcaption>
+	</figure>
+</div>
+<p class="credit" style="margin-top: 0%">Credit: CS184/284A Lecture 5 Slides by Ren Ng</p>
+<p>
+	In both methods, if a texture coordinate lies outside of the texture, we clamp it. <br>
+	Here are the results of the texture-mapped Berkeley seal using the two different interpolation methods and at different sampling rates.
+	Notice how bilinear interpolation is better at antialiasing than nearest neighbor interpolation.
+</p>
 <div class="gallery">
 	<figure>
 		<img src="results/task5_nearest_1.png" width="400">
@@ -316,6 +342,65 @@
 </div>
 
 <h3 id="task-6">"Level Sampling" with Mipmaps for Texture Mapping</h3>
+<p>
+	Pixel sampling is oftentimes not enough to produce a satisfactory result.
+	Using one image to texture map a scene may cause aliasing in some areas.
+	And if the texture is downsampled to resolve the aliasing, it may cause blurring in other areas.
+	This is illustrated below.
+</p>
+<div class="gallery">
+	<figure>
+		<img src="img/lec5_slide-59.jpeg" width="400">
+		<figcaption>Full Resolution Texture</figcaption>
+	</figure>
+	<figure>
+		<img src="img/lec5_slide-61.jpeg" width="400">
+		<figcaption>Downsampled 16 x 16 Texture</figcaption>
+	</figure>
+</div>
+<p class="credit" style="margin-top: 0%">Credit: CS184/284A Lecture 5 Slides by Ren Ng</p>
+<p>
+	The solution is to use level sampling, which is to sample from multiple images—more specifically,
+	the same texture but at different resolutions.
+	This sequence of images is known as a mipmap (i.e. image pyramid);
+	at each level of the mipmap, the image is a lower resolution version of the level below's.
+	The level 0 image is at the original resolution; higher levels are at progressively lower resolutions.
+	The following images show the different levels of a mipmap.
+</p>
+<div class="gallery">
+	<figure>
+		<img src="img/lec5_slide-62.jpeg" width="500">
+		<figcaption>Mipmap</figcaption>
+	</figure>
+</div>
+<p class="credit" style="margin-top: 0%">Credit: CS184/284A Lecture 5 Slides by Ren Ng</p>
+<p>
+	In this part, we will implement three different level sampling methods: zero, nearest neighbor, and bilinear.
+	For the "zero" method, we simply sample from the zero-th level of the mipmap.
+</p>
+
+<p>
+	For the nearest neighbor and bilinear level sampling methods, we need to determine the appropriate mipmap level from which to sample.
+	The first step is to calculate the partial derivatives of the (u, v) texture coordinates with respect to x and y.
+	Then, using the formula shown below, we can calculate L (the length in pixels in the original image) and then D (the mipmap level).
+	The larger L is, the lower the resolution we want to sample from.
+</p>
+<div class="gallery">
+	<figure>
+		<img src="img/lec5_slide-65.jpeg" width="500">
+		<figcaption>Computing Mipmap Level D</figcaption>
+	</figure>
+</div>
+<p class="credit" style="margin-top: 0%">Credit: CS184/284A Lecture 5 Slides by Ren Ng</p>
+<p>
+	In nearest neighbor level sampling, we sample from the nearest mipmap level (round D value to an integer).
+	If the level D value is invalid, we will clamp it.
+	For bilinear level sampling, we sample from adjacent levels (floor and ceiling of D) and linearly interpolate.
+	When both bilinear pixel sampling and bilinear level sampling are used, it is known as trilinear sampling.
+</p>
+<p>
+	Below are examples of warped grid and brick textures using the different level and pixel sampling methods.
+</p>
 <div class="gallery">
 	<figure>
 		<img src="results/task6_grid_L0_Pnear.png" width="400">
@@ -323,7 +408,7 @@
 	</figure>
 	<figure>
 		<img src="results/task6_grid_L0_Plin.png" width="400">
-		<figcaption>Level Sampling: Zero <br> Pixel Sampling: Linear</figcaption>
+		<figcaption>Level Sampling: Zero <br> Pixel Sampling: Bilinear</figcaption>
 	</figure>
 </div>
 <div class="gallery">
@@ -333,21 +418,22 @@
 	</figure>
 	<figure>
 		<img src="results/task6_grid_Lnear_Plin.png" width="400">
-		<figcaption>Level Sampling: Nearest <br> Pixel Sampling: Linear</figcaption>
+		<figcaption>Level Sampling: Nearest <br> Pixel Sampling: Bilinear</figcaption>
 	</figure>
 </div>
 <div class="gallery">
 	<figure>
 		<img src="results/task6_grid_Llin_Pnear.png" width="400">
-		<figcaption>Level Sampling: Linear <br> Pixel Sampling: Nearest</figcaption>
+		<figcaption>Level Sampling: Bilinear <br> Pixel Sampling: Nearest</figcaption>
 	</figure>
 	<figure>
 		<img src="results/task6_grid_Llin_Plin.png" width="400">
-		<figcaption>Level Sampling: Linear <br> Pixel Sampling: Linear</figcaption>
+		<figcaption>Level Sampling: Bilinear <br> Pixel Sampling: Bilinear</figcaption>
 	</figure>
 </div>
-
-
+<p>
+	Brick texture:
+</p>
 <div class="gallery">
 	<figure>
 		<img src="results/task6_brick_L0_Pnear.png" width="400">
@@ -355,7 +441,7 @@
 	</figure>
 	<figure>
 		<img src="results/task6_brick_L0_Plin.png" width="400">
-		<figcaption>Level Sampling: Zero <br> Pixel Sampling: Linear</figcaption>
+		<figcaption>Level Sampling: Zero <br> Pixel Sampling: Bilinear</figcaption>
 	</figure>
 </div>
 <div class="gallery">
@@ -365,20 +451,33 @@
 	</figure>
 	<figure>
 		<img src="results/task6_brick_Lnear_Plin.png" width="400">
-		<figcaption>Level Sampling: Nearest <br> Pixel Sampling: Linear</figcaption>
+		<figcaption>Level Sampling: Nearest <br> Pixel Sampling: Bilinear</figcaption>
 	</figure>
 </div>
 <div class="gallery">
 	<figure>
 		<img src="results/task6_brick_Llin_Pnear.png" width="400">
-		<figcaption>Level Sampling: Linear <br> Pixel Sampling: Nearest</figcaption>
+		<figcaption>Level Sampling: Bilinear <br> Pixel Sampling: Nearest</figcaption>
 	</figure>
 	<figure>
 		<img src="results/task6_brick_Llin_Plin.png" width="400">
-		<figcaption>Level Sampling: Linear <br> Pixel Sampling: Linear</figcaption>
+		<figcaption>Level Sampling: Bilinear <br> Pixel Sampling: Bilinear</figcaption>
 	</figure>
 </div>
-
+<p>
+	In both the grid and brick examples,
+	we can see the effect that the different pixel and level sampling techniques have on antialiasing.
+</p>
+<p>
+	Now that we have implemented three sampling techniques: supersampling, pixel sampling, and level sampling,
+	let's compare the different tradeoffs of speed, memory usage, and antialiasing power.
+	Supersampling is costly, both in terms of speed and memory usage.
+	In comparison, pixel sampling is faster and uses less memory.
+	As was mentioned previously however, pixel sampling sometimes sacrifices detail for antialiasing and vice versa.
+	Level sampling is also faster and uses less memory than supersampling.
+	And not only this, but it also has the most antialiasing power of the three sampling techniques.
+	Level sampling solves the issue with pixel sampling; it antialiases appropriately while preserving detail where needed.
+</p>
 
 </body>
 </html>
