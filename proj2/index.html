@@ -76,43 +76,97 @@
 	&emsp; <a href="#overview">Overview</a> <br>
 	&emsp; <a href="#section-1">Bezier Curves and Surfaces</a> <br>
 	&emsp; &emsp;<a href="#task-1">Bezier Curves with 1D de Casteljau Subdivision</a> <br>
-	&emsp; &emsp;<a href="#task-2">Bezier Surfaces with Separable 1D de Casteljau Subdivision</a> <br>
-	&emsp; <a href="#section-2">Sampling</a> <br>
-	&emsp; &emsp;<a href="#task-3">Average Normals for Half-edge Meshes</a> <br>
-	&emsp; &emsp;<a href="#task-4">Half-edge Flip</a> <br>
-	&emsp; &emsp;<a href="#task-5">Half-edge Split</a> <br>
+	&emsp; &emsp;<a href="#task-2">Bezier Surfaces with Separable 1D de Casteljau</a> <br>
+	&emsp; <a href="#section-2">Triangle Meshes and Half-Edge Data Structure</a> <br>
+	&emsp; &emsp;<a href="#task-3">Area-Weighted Vertex Normals</a> <br>
+	&emsp; &emsp;<a href="#task-4">Edge Flip</a> <br>
+	&emsp; &emsp;<a href="#task-5">Edge Split</a> <br>
 	&emsp; &emsp;<a href="#task-6">Loop Subdivision for Mesh Upsampling</a> <br>
 </p>
 <hr>
 <h2 id="overview">Overview</h2>
 <p>
-	goal...
+	The goal of this project is to explore topics on geometric modeling,
+	such as Bezier curves and triangle mesh manipulation using the half-edge data structure.
 </p>
 
 <h2 id="section-1">Bezier Curves and Surfaces</h2>
-<h3 id="task-1">Bezier Curves and Surfaces</h3>
-<p class="credit" style="margin-top: -2%">Credit: CS184/284A Lecture 2 Slides by Ren Ng</p>
+<h3 id="task-1">Bezier Curves with 1D de Casteljau Subdivision</h3>
 
+<p>
+	To evaluate Bezier curves, we can use de Casteljau's algorithm
+	in which we recursively linearly interpolate between control points.
+	More specifically, given a t-value, we can perform linear interpolations between adjacent control points until one point remains.
+	This point lies on the Bezier curve, as illustrated in the Cubic Bezier Curve diagram below.
+</p>
+
+<div class="gallery">
+	<figure>
+		<img src="img/lec7_slide-67.jpeg" width="500">
+		<figcaption>Cubic Bezier Curve</figcaption>
+	</figure>
+</div>
+<p>
+	The following equations are used to evaluate the point at value t.
+	This can be easily translated into code, and this is how I implemented the 1D Bezier curve function.
+</p>
+<div class="gallery">
+	<figure>
+		<img src="img/lec7_slide-70.jpeg" width="600">
+		<figcaption>Quadratic Bezier Curve: Linear Interpolation</figcaption>
+	</figure>
+</div>
+<p class="credit">Credit: CS184/284A Lecture 7 Slides by Ren Ng</p>
+<p>
+	Below, the points in white are the original control points.
+	The animation shows the intermediate points (blue) that are generated from the recursive interpolation steps
+	and the point (red) that lies on the final Bezier curve (green) for one particular t-value.
+</p>
 <div class="gallery">
 	<figure>
 		<img src="results/task1_steps.gif" width="500">
-		<figcaption>Steps</figcaption>
+		<figcaption>Recursive Linear Interpolation Steps</figcaption>
 	</figure>
 </div>
+<p>
+	We can also visualize how the evaluated intermediate points change as we slide through the different t-values.
+</p>
 <div class="gallery">
 	<figure>
 		<img src="results/task1_t_values.gif" width="500">
-		<figcaption>Changing t-values</figcaption>
+		<figcaption>Changing the t-values</figcaption>
 	</figure>
 </div>
+<p>
+	Moving the original control points will also affect the curve globally, as shown below.
+</p>
 <div class="gallery">
 	<figure>
 		<img src="results/task1_moving_points.gif" width="500">
-		<figcaption>Moving Control Points</figcaption>
+		<figcaption>Moving the Control Points</figcaption>
 	</figure>
 </div>
 
-<h3 id="task-2">Bezier Surfaces with Separable 1D de Casteljau Subdivision</h3>
+<h3 id="task-2">Bezier Surfaces with Separable 1D de Casteljau</h3>
+<p>
+	The de Casteljau algorithm can also be extended to produce 3-dimensional surfaces.
+	To produce a Bezier surface, multiple instances of de Casteljau's algorithm are performed.
+	The details of this are described in the figure below.
+</p>
+<p>
+	Essentially, we want to calculate a (u, v) position on our surface by first calculating points of the curves in direction u at the t-value v.
+	These are then the control points of the "moving" curve, which we use to evaluate the final point at the t-value u.
+</p>
+<div class="gallery">
+	<figure>
+		<img src="img/lec7_slide-89.jpeg" width="600">
+		<figcaption></figcaption>
+	</figure>
+</div>
+<p class="credit">Credit: CS184/284A Lecture 7 Slides by Ren Ng</p>
+<p>
+	Using this method, we can create Bezier surfaces like the teapot below.
+</p>
 <div class="gallery">
 	<figure>
 		<img src="results/task2_teapot.png" width="600">
@@ -120,8 +174,46 @@
 	</figure>
 </div>
 
-<h2 id="section-2">Sampling</h2>
-<h3 id="task-3">Average Normals for Half-edge Meshes</h3>
+<h2 id="section-2">Triangle Meshes and Half-Edge Data Structure</h2>
+<p>
+	In this section, we work with the half-edge data structure, which will allow us to traverse a mesh.
+	The core structure is outlined below.
+</p>
+<div class="gallery">
+	<figure>
+		<img src="img/lec8_slide-22.jpeg" width="600">
+		<figcaption></figcaption>
+	</figure>
+</div>
+<p class="credit">Credit: CS184/284A Lecture 8 Slides by Ren Ng</p>
+
+<h3 id="task-3">Area-Weighted Vertex Normals</h3>
+<p>
+	We can improve the "look" of smooth surfaces by using Phong shading instead of flat shading.
+	Phong shading interpolates surface normals from a face's vertex normals.
+	These surface normals are then interpolated and normalized at each pixel to produce a smooth-looking result.
+</p>
+<p> An example of flat versus Phong shading is shown below. The Phong shading is noticeably smoother.</p>
+<div class="gallery">
+	<figure>
+		<img src="results/task3_cow_flat.png" width="400">
+		<figcaption>Flat Shading: Spot the cow</figcaption>
+	</figure>
+	<figure>
+		<img src="results/task3_cow_phong.png" width="400">
+		<figcaption>Phong Shading: Spot the cow</figcaption>
+	</figure>
+</div>
+<p>
+	To utilize Phong shading, we need to find the area-weighted vertex normal for each vertex.
+	This is simply the sum of the area-weighted normals of all the faces incident to a vertex.
+	With the half-edge data structure, we can traverse through the appropriate faces and
+	evaluate the normal and area of each face (using cross products and norms.)
+</p>
+<p>
+	The teapot below is shown in both flat and Phong shading.
+</p>
+
 <div class="gallery">
 	<figure>
 		<img src="results/task3_teapot_flat.png" width="400">
@@ -133,18 +225,43 @@
 	</figure>
 </div>
 
+
+<h3 id="task-4">Edge Flip</h3>
+<p>
+	Now, we will implement features to edit a triangular mesh.
+	The first of which will be a local remeshing operation that allows us to flip an edge.
+</p>
+
 <div class="gallery">
 	<figure>
-		<img src="results/task3_cow_flat.png" width="400">
-		<figcaption>Flat Shading: Spot the cow</figcaption>
-	</figure>
-	<figure>
-		<img src="results/task3_cow_phong.png" width="400">
-		<figcaption>Phong Shading: Spot the cow</figcaption>
+		<img src="img/edge_flip.jpeg" width="600">
+		<figcaption></figcaption>
 	</figure>
 </div>
+<p>
+	For an edge flip, no new elements are created, so we only need to reassign pointers.
+</p>
+<p>
+	To start, we can draw a before and after diagram with all the elements (i.e. halfedges, edges, vertices, faces) labeled,
+	making sure the element labels are consistent in the pre-flip and post-flip diagrams.
+</p>
+<div class="gallery">
+	<figure>
+		<img src="img/edge_flip_diagram.png" width="700">
+		<figcaption></figcaption>
+	</figure>
+</div>
+<p class="credit">Credit: <a href="https://cmu-graphics.github.io/Scotty3D/meshedit/local/edge_flip">CMU Graphics</a></p>
 
-<h3 id="task-4">Half-edge Flip</h3>
+<p>
+	Since it is easy to miss a pointer reassignment,
+	we can start by setting <b>all</b> the pointers of <b>every</b> element in the mesh.
+	This way, we know we have not missed anything. Afterwards, we can remove the unnecessary pointer assignments.
+</p>
+
+<p>
+	The figures below show a mesh being edited with edge flips.
+</p>
 <div class="gallery">
 	<figure>
 		<img src="results/task4_no_flips.png" width="400">
@@ -166,11 +283,29 @@
 	</figure>
 </div>
 
-<h3 id="task-5">Half-edge Split</h3>
+<h3 id="task-5">Edge Split</h3>
+<p>
+	Another local remeshing operation on an edge is called a split.
+	Splitting an edge inserts a new vertex at the midpoint and connects it to the surrounding vertices, as shown below.
+</p>
+<div class="gallery">
+	<figure>
+		<img src="img/edge_split.jpeg" width="600">
+		<figcaption></figcaption>
+	</figure>
+</div>
+<p>
+	Unlike when flipping an edge, splitting an edge will create new elements.
+	More specifically, one vertex, three edges (and thus 6 halfedges), and two faces.
+	We will use the same implementation approach as we did in Edge Flip: draw a diagram and set <b>all</b> pointers.
+</p>
+<p>
+	The following figures show a mesh being edited with a combination of edge flips and splits.
+</p>
 <div class="gallery">
 	<figure>
 		<img src="results/task5_original.png" width="400">
-		<figcaption>No Splits</figcaption>
+		<figcaption>Original</figcaption>
 	</figure>
 </div>
 <div class="gallery">
@@ -185,22 +320,74 @@
 </div>
 
 <h3 id="task-6">Loop Subdivision for Mesh Upsampling</h3>
+<p>
+	Upsampling a mesh converts a coarse polygon mesh into a higher-resolution one, as shown below.
+</p>
 <div class="gallery">
 	<figure>
-		<img src="results/task6_teapot0.png" width="400">
+		<img src="results/task6_teapot0.png" width="250">
 		<figcaption>Original</figcaption>
 	</figure>
-</div>
-<div class="gallery">
 	<figure>
-		<img src="results/task6_teapot1.png" width="400">
+		<img src="results/task6_teapot1.png" width="250">
 		<figcaption>Levels of Subdivision: 1</figcaption>
 	</figure>
 	<figure>
-		<img src="results/task6_teapot2.png" width="400">
+		<img src="results/task6_teapot2.png" width="250">
 		<figcaption>Levels of Subdivision: 2</figcaption>
 	</figure>
 </div>
+<p>
+	In the case of triangular meshes, this consists of two key ideas:
+</p>
+<p>
+	1. Subdividing each triangle into four smaller triangles, called 4-1 subdivision.
+</p>
+<div class="gallery">
+	<figure>
+		<img src="img/4-1_subdivision.jpeg" width="500">
+		<figcaption></figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="img/subdivision_split_flip.jpeg" width="700">
+		<figcaption></figcaption>
+	</figure>
+</div>
+<p>
+	This is accomplished by first splitting each old edge of the mesh in any order.
+	Then, newly created edges that connect an old vertex with a new vertex are flipped.
+</p>
+<p>
+	2. Updating the vertices based on a weighting scheme
+</p>
+<div class="gallery">
+	<figure>
+		<img src="img/upsampling_weightings.jpeg" width="600">
+		<figcaption></figcaption>
+	</figure>
+</div>
+<p>
+	Depending on if the vertex is new or old, we use a different set of weights.
+	In both cases, we compute the new position of the vertex based on its adjacent vertices.
+</p>
+<p>
+	The actual implementation of loop subdivision consists of 5 different parts:
+</p>
+<p>
+	1. Computing the positions of the old vertices (and storing it for later) <br>
+	2. Computing the positions of the new vertices (and storing it for later) <br>
+	3. Splitting all old edges (in any order) <br>
+	4. Flipping new edges that connect an old vertex with a new vertex <br>
+	5. Updating the positions of all vertices (calculated from 1 and 2)
+</p>
+
+<p>
+	Although loop subdivision has the potential to result in smoother meshes, it is not perfect since it is highly dependent on the mesh itself.
+	For example, the triangular mesh of the cube below is not symmetric, so upsampling via loop subdivision does not result in a symmetric mesh.
+	Furthermore, the sharp corners and edges become rounded, and at four levels of subdivison, the mesh no longer resembles a cube.
+</p>
 
 <div class="gallery">
 	<figure>
@@ -224,7 +411,12 @@
 		<figcaption>Level 4</figcaption>
 	</figure>
 </div>
-
+<p>
+	We can however fix the symmetry issue by pre-splitting edges of the mesh to make it symmetric.
+	Below, I split some of the cube mesh's edges so that each face consists of four triangles as shown in the Level 0 figure below.
+	Since the base mesh is symmetric, the asymmetry issue that we encountered previously is solved
+	because upsampling on a symmetric mesh maintains symmetry at each subdivision level.
+</p>
 <div class="gallery">
 	<figure>
 		<img src="results/task6_cube_symm0.png" width="200" style="margin-left: -20px; margin-right: -20px">
@@ -247,7 +439,16 @@
 		<figcaption>Level 4</figcaption>
 	</figure>
 </div>
-
+<p>
+	We can also alleviate the "rounding" of sharp corners and edges by adding more edges
+	near the areas of the mesh where we would like less rounding.
+	Having more vertices closer to each other means the effect of averaging (the vertex position weighting scheme) on a particular vertex is not as strong.
+	In other words, the vertex is not pulled too far away from its original position because its neighboring vertices are close by.
+</p>
+<p>
+	Below, I performed many edge splits near one edge of the cube, which added many new edges and vertices.
+	After upsampling, we observe that this edge of the cube is less round than the edges where I did not perform edge splitting.
+</p>
 <div class="gallery">
 	<figure>
 		<img src="results/task6_cube_sharp_persp.png" width="250" style="margin-left: -20px; margin-right: -20px">
