@@ -1,7 +1,272 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 2 here
-	</body>
+<!doctype html>
+
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="author" content="Monica Tang">
+
+	<style>
+		*{
+			font-family:-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+		}
+		p, ul, li {
+			line-height: 1.5;
+		}
+		body {
+			margin: 18%;
+			margin-top: 5%;
+			margin-bottom: 5%;
+		}
+		.toc {
+			margin-top: -16px;
+			font-size: small;
+		}
+		img {
+			margin: 5px;
+		}
+		figure {
+			margin: 5px;
+		}
+		figcaption{
+			text-align: center;
+		}
+		.gallery {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			overflow-x: visible;
+		}
+		.credit {
+			text-align: right;
+			margin-top: 0%;
+			color: dimgray;
+			font-size: small;
+		}
+		.vl {
+			border-left: 1px solid black;
+			height: 240px;
+		}
+		.code-block {
+			font-family: monospace;
+		}
+		.code-container {
+			display: flex;
+			justify-content: center;
+		}
+		code {
+			font-family: Consolas,"courier new";
+			color: crimson;
+			background-color: #f1f1f1;
+			padding: 2px;
+			font-size: 105%;
+		}
+	</style>
+
+</head>
+
+<body>
+<h1 align="middle">Project 2: Mesh Editor</h1>
+<h3 align="middle">CS 184: Computer Graphics and Imaging, Spring 2022</h3>
+<h2 align="middle">Monica Tang</h2>
+
+<hr>
+<h4>Table of Contents:</h4>
+<p class="toc">
+	&emsp; <a href="#overview">Overview</a> <br>
+	&emsp; <a href="#section-1">Bezier Curves and Surfaces</a> <br>
+	&emsp; &emsp;<a href="#task-1">Bezier Curves with 1D de Casteljau Subdivision</a> <br>
+	&emsp; &emsp;<a href="#task-2">Bezier Surfaces with Separable 1D de Casteljau Subdivision</a> <br>
+	&emsp; <a href="#section-2">Sampling</a> <br>
+	&emsp; &emsp;<a href="#task-3">Average Normals for Half-edge Meshes</a> <br>
+	&emsp; &emsp;<a href="#task-4">Half-edge Flip</a> <br>
+	&emsp; &emsp;<a href="#task-5">Half-edge Split</a> <br>
+	&emsp; &emsp;<a href="#task-6">Loop Subdivision for Mesh Upsampling</a> <br>
+</p>
+<hr>
+<h2 id="overview">Overview</h2>
+<p>
+	goal...
+</p>
+
+<h2 id="section-1">Bezier Curves and Surfaces</h2>
+<h3 id="task-1">Bezier Curves and Surfaces</h3>
+<p class="credit" style="margin-top: -2%">Credit: CS184/284A Lecture 2 Slides by Ren Ng</p>
+
+<div class="gallery">
+	<figure>
+		<img src="results/task1_steps.gif" width="500">
+		<figcaption>Steps</figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/task1_t_values.gif" width="500">
+		<figcaption>Changing t-values</figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/task1_moving_points.gif" width="500">
+		<figcaption>Moving Control Points</figcaption>
+	</figure>
+</div>
+
+<h3 id="task-2">Bezier Surfaces with Separable 1D de Casteljau Subdivision</h3>
+<div class="gallery">
+	<figure>
+		<img src="results/task2_teapot.png" width="600">
+		<figcaption>Bezier Surface: teapot</figcaption>
+	</figure>
+</div>
+
+<h2 id="section-2">Sampling</h2>
+<h3 id="task-3">Average Normals for Half-edge Meshes</h3>
+<div class="gallery">
+	<figure>
+		<img src="results/task3_teapot_flat.png" width="400">
+		<figcaption>Flat Shading: teapot</figcaption>
+	</figure>
+	<figure>
+		<img src="results/task3_teapot_phong.png" width="400">
+		<figcaption>Phong Shading: teapot</figcaption>
+	</figure>
+</div>
+
+<div class="gallery">
+	<figure>
+		<img src="results/task3_cow_flat.png" width="400">
+		<figcaption>Flat Shading: Spot the cow</figcaption>
+	</figure>
+	<figure>
+		<img src="results/task3_cow_phong.png" width="400">
+		<figcaption>Phong Shading: Spot the cow</figcaption>
+	</figure>
+</div>
+
+<h3 id="task-4">Half-edge Flip</h3>
+<div class="gallery">
+	<figure>
+		<img src="results/task4_no_flips.png" width="400">
+		<figcaption>No Flips</figcaption>
+	</figure>
+	<figure>
+		<img src="results/task4_one_flip.png" width="400">
+		<figcaption>One Flip</figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/task4_many_flips.png" width="400">
+		<figcaption>Many Flips</figcaption>
+	</figure>
+	<figure>
+		<img src="results/task4_more_flips.png" width="400">
+		<figcaption>Even More Flips</figcaption>
+	</figure>
+</div>
+
+<h3 id="task-5">Half-edge Split</h3>
+<div class="gallery">
+	<figure>
+		<img src="results/task5_original.png" width="400">
+		<figcaption>No Splits</figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/task5_splits.png" width="400">
+		<figcaption>With Splits</figcaption>
+	</figure>
+	<figure>
+		<img src="results/task5_flips_splits.png" width="400">
+		<figcaption>With Flips and Splits</figcaption>
+	</figure>
+</div>
+
+<h3 id="task-6">Loop Subdivision for Mesh Upsampling</h3>
+<div class="gallery">
+	<figure>
+		<img src="results/task6_teapot0.png" width="400">
+		<figcaption>Original</figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/task6_teapot1.png" width="400">
+		<figcaption>Levels of Subdivision: 1</figcaption>
+	</figure>
+	<figure>
+		<img src="results/task6_teapot2.png" width="400">
+		<figcaption>Levels of Subdivision: 2</figcaption>
+	</figure>
+</div>
+
+<div class="gallery">
+	<figure>
+		<img src="results/task6_cube0.png" width="200" style="margin-left: -20px; margin-right: -20px">
+		<figcaption>Level 0</figcaption>
+	</figure>
+	<figure>
+		<img src="results/task6_cube1.png" width="200" style="margin-left: -20px; margin-right: -20px">
+		<figcaption>Level 1</figcaption>
+	</figure>
+	<figure>
+		<img src="results/task6_cube2.png" width="200" style="margin-left: -20px; margin-right: -20px">
+		<figcaption>Level 2</figcaption>
+	</figure>
+	<figure>
+		<img src="results/task6_cube3.png" width="200" style="margin-left: -20px; margin-right: -20px">
+		<figcaption>Level 3</figcaption>
+	</figure>
+	<figure>
+		<img src="results/task6_cube4.png" width="200" style="margin-left: -20px; margin-right: -20px">
+		<figcaption>Level 4</figcaption>
+	</figure>
+</div>
+
+<div class="gallery">
+	<figure>
+		<img src="results/task6_cube_symm0.png" width="200" style="margin-left: -20px; margin-right: -20px">
+		<figcaption>Level 0</figcaption>
+	</figure>
+	<figure>
+		<img src="results/task6_cube_symm1.png" width="200" style="margin-left: -20px; margin-right: -20px">
+		<figcaption>Level 1</figcaption>
+	</figure>
+	<figure>
+		<img src="results/task6_cube_symm2.png" width="200" style="margin-left: -20px; margin-right: -20px">
+		<figcaption>Level 2</figcaption>
+	</figure>
+	<figure>
+		<img src="results/task6_cube_symm3.png" width="200" style="margin-left: -20px; margin-right: -20px">
+		<figcaption>Level 3</figcaption>
+	</figure>
+	<figure>
+		<img src="results/task6_cube_symm4.png" width="200" style="margin-left: -20px; margin-right: -20px">
+		<figcaption>Level 4</figcaption>
+	</figure>
+</div>
+
+<div class="gallery">
+	<figure>
+		<img src="results/task6_cube_sharp_persp.png" width="250" style="margin-left: -20px; margin-right: -20px">
+		<figcaption>Preprocessed</figcaption>
+	</figure>
+	<figure>
+		<img src="results/task6_cube_sharp0.png" width="250" style="margin-left: -20px; margin-right: -20px">
+		<figcaption>Level 0</figcaption>
+	</figure>
+	<figure>
+		<img src="results/task6_cube_sharp1.png" width="250" style="margin-left: -20px; margin-right: -20px">
+		<figcaption>Level 1</figcaption>
+	</figure>
+	<figure>
+		<img src="results/task6_cube_sharp2.png" width="250" style="margin-left: -20px; margin-right: -20px">
+		<figcaption>Level 2</figcaption>
+	</figure>
+</div>
+
+
+</body>
 </html>
