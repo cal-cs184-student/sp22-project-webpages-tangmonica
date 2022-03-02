@@ -154,7 +154,7 @@
 	The details of this are described in the figure below.
 </p>
 <p>
-	Essentially, we want to calculate a (u, v) position on our surface by first calculating points of the curves in direction u at the t-value v.
+	Essentially, we want to calculate a (u, v) position on our surface by first calculating points of the curves in the u direction at the t-value v.
 	These are then the control points of the "moving" curve, which we use to evaluate the final point at the t-value u.
 </p>
 <div class="gallery">
@@ -286,7 +286,7 @@
 <h3 id="task-5">Edge Split</h3>
 <p>
 	Another local remeshing operation on an edge is called a split.
-	Splitting an edge inserts a new vertex at the midpoint and connects it to the surrounding vertices, as shown below.
+	Splitting an edge inserts a new vertex at the midpoint and connects it to the surrounding vertices.
 </p>
 <div class="gallery">
 	<figure>
@@ -321,7 +321,7 @@
 
 <h3 id="task-6">Loop Subdivision for Mesh Upsampling</h3>
 <p>
-	Upsampling a mesh converts a coarse polygon mesh into a higher-resolution one, as shown below.
+	Upsampling a mesh converts a coarse polygon mesh into a higher-resolution one, which can be seen below.
 </p>
 <div class="gallery">
 	<figure>
@@ -338,7 +338,7 @@
 	</figure>
 </div>
 <p>
-	In the case of triangular meshes, this consists of two key ideas:
+	In the case of loop subdivision, which upsamples a triangular mesh, there are two key ideas:
 </p>
 <p>
 	1. Subdividing each triangle into four smaller triangles, called 4-1 subdivision.
@@ -356,8 +356,8 @@
 	</figure>
 </div>
 <p>
-	This is accomplished by first splitting each old edge of the mesh in any order.
-	Then, newly created edges that connect an old vertex with a new vertex are flipped.
+	This is accomplished by first splitting each old edge of the mesh in any order,
+	then flipping newly created edges that connect an old vertex with a new vertex.
 </p>
 <p>
 	2. Updating the vertices based on a weighting scheme
@@ -373,7 +373,7 @@
 	In both cases, we compute the new position of the vertex based on its adjacent vertices.
 </p>
 <p>
-	The actual implementation of loop subdivision consists of 5 different parts:
+	The actual code implementation of loop subdivision can be divided into 5 different parts:
 </p>
 <p>
 	1. Computing the positions of the old vertices (and storing it for later) <br>
@@ -412,7 +412,7 @@
 	</figure>
 </div>
 <p>
-	We can however fix the symmetry issue by pre-splitting edges of the mesh to make it symmetric.
+	We can fix the symmetry issue by pre-splitting edges of the mesh to make it symmetric.
 	Below, I split some of the cube mesh's edges so that each face consists of four triangles as shown in the Level 0 figure below.
 	Since the base mesh is symmetric, the asymmetry issue that we encountered previously is solved
 	because upsampling on a symmetric mesh maintains symmetry at each subdivision level.
@@ -447,7 +447,7 @@
 </p>
 <p>
 	Below, I performed many edge splits near one edge of the cube, which added many new edges and vertices.
-	After upsampling, we observe that this edge of the cube is less round than the edges where I did not perform edge splitting.
+	After upsampling, this edge of the cube is less round than the edges where I did not perform edge splitting.
 </p>
 <div class="gallery">
 	<figure>
