@@ -1,7 +1,447 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 3-1 here
-	</body>
+<!doctype html>
+
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="author" content="Monica Tang">
+
+	<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+	<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+	<style>
+		*{
+			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif
+		}
+		p, ul, li {
+			line-height: 1.5;
+		}
+		body {
+			margin: 18%;
+			margin-top: 5%;
+			margin-bottom: 5%;
+		}
+		.toc {
+			margin-top: -16px;
+			font-size: small;
+		}
+		img {
+			margin: 5px;
+		}
+		figure {
+			margin: 5px;
+		}
+		figcaption{
+			text-align: center;
+		}
+		.gallery {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			overflow-x: visible;
+		}
+		.credit {
+			text-align: right;
+			margin-top: 0%;
+			color: dimgray;
+			font-size: small;
+		}
+		.vl {
+			border-left: 1px solid black;
+			height: 240px;
+		}
+		.code-block {
+			font-family: monospace;
+		}
+		.code-container {
+			display: flex;
+			justify-content: center;
+		}
+		code {
+			font-family: Consolas,"courier new";
+			color: crimson;
+			background-color: #f1f1f1;
+			padding: 2px;
+			font-size: 105%;
+		}
+		code2 {
+			font-family: Consolas,"courier new";
+			color: black;
+			background-color: #f1f1f1;
+			padding: 2px;
+			font-size: 95%;
+		}
+	</style>
+
+</head>
+
+<body>
+<h1 align="middle">Project 3-1: PathTracer</h1>
+<h3 align="middle">CS 184: Computer Graphics and Imaging, Spring 2022</h3>
+<h2 align="middle">Monica Tang</h2>
+
+<hr>
+<h4>Table of Contents:</h4>
+<p class="toc">
+	&emsp; <a href="#overview">Overview</a> <br>
+	&emsp; <a href="#part-1">Part 1: Ray Generation and Scene Intersection</a> <br>
+	&emsp; <a href="#part-2">Part 2: Bounding Volume Hierarchy</a> <br>
+	&emsp; <a href="#part-3">Part 3: Direct Illumination</a> <br>
+	&emsp; <a href="#part-4">Part 4: Global Illumination</a> <br>
+	&emsp; <a href="#part-5">Part 5: Adaptive Sampling</a> <br>
+</p>
+<hr>
+<h2 id="overview">Overview</h2>
+<p>
+	Goal of project...
+</p>
+
+<h2 id="part-1">Part 1: Ray Generation and Scene Intersection</h2>
+<div class="gallery">
+	<figure>
+		<img src="results/part1_CBempty.png" width="400">
+		<figcaption><code2>CBempty.dae</code2></figcaption>
+	</figure>
+	<figure>
+		<img src="results/part1_CBcoil.png" width="400">
+		<figcaption><code2>CBcoil.dae</code2></figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/part1_CBspheres.png" width="400">
+		<figcaption><code2>CBspheres.dae</code2></figcaption>
+	</figure>
+	<figure>
+		<img src="results/part1_CBgems.png" width="400">
+		<figcaption><code2>CBgems.dae</code2></figcaption>
+	</figure>
+</div>
+
+
+<h2 id="part-2">Part 2: Bounding Volume Hierarchy</h2>
+<p>
+	Split by sorting the centroid positions from least to greatest.
+	Recurse with half for left child and half for right
+</p>
+<p>
+	cow: 0.1993s, 36.9886s <br>
+	CBbunny: 0.2265s, 243.4630s <br>
+	CBcoil: 0.1699s, 52.5585s <br>
+</p>
+<div class="gallery">
+	<figure>
+		<img src="results/part2_cow.png" width="300">
+		<figcaption><code2>cow.dae</code2></figcaption>
+	</figure>
+	<figure>
+		<img src="results/part2_CBcoil.png" width="300">
+		<figcaption><code2>CBcoil.dae</code2></figcaption>
+	</figure>
+	<figure>
+		<img src="results/part2_CBbunny.png" width="300">
+		<figcaption><code2>CBbunny.dae</code2></figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/part2_maxplanck.png" width="300">
+		<figcaption><code2>maxplanck.dae</code2></figcaption>
+	</figure>
+	<figure>
+		<img src="results/part2_beast.png" width="300">
+		<figcaption><code2>beast.dae</code2></figcaption>
+	</figure>
+	<figure>
+		<img src="results/part2_CBlucy.png" width="300">
+		<figcaption><code2>CBlucy.dae</code2></figcaption>
+	</figure>
+</div>
+
+<h2 id="part-3">Part 3: Direct Illumination</h2>
+
+<p>
+	comparison of hemisphere and importance sampling
+</p>
+<div class="gallery">
+	<figure>
+		<img src="results/part3_CBspheres_lambertian_H_16_8.png" width="400">
+		<figcaption>
+			Hemisphere Sampling <br>
+			<code2>16 samples per pixel</code2> <br>
+			<code2>8 samples per light</code2>
+		</figcaption>
+	</figure>
+	<figure>
+		<img src="results/part3_CBspheres_lambertian_16_8.png" width="400">
+		<figcaption>
+			Importance Sampling <br>
+			<code2>16 samples per pixel</code2> <br>
+			<code2>8 samples per light</code2>
+		</figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/part3_CBspheres_lambertian_H_64_32.png" width="400">
+		<figcaption>
+			Hemisphere Sampling <br>
+			<code2>64 samples per pixel</code2> <br>
+			<code2>32 samples per light</code2>
+		</figcaption>
+	</figure>
+	<figure>
+		<img src="results/part3_CBspheres_lambertian_64_32.png" width="400">
+		<figcaption>
+			Importance Sampling <br>
+			<code2>64 samples per pixel</code2> <br>
+			<code2>32 samples per light</code2>
+		</figcaption>
+	</figure>
+</div>
+
+<div class="gallery">
+	<figure>
+		<img src="results/part3_CBbunny_H_16_8.png" width="400">
+		<figcaption>
+			Hemisphere Sampling <br>
+			<code2>16 samples per pixel</code2> <br>
+			<code2>8 samples per light</code2>
+		</figcaption>
+	</figure>
+	<figure>
+		<img src="results/part3_bunny_16_8.png" width="400">
+		<figcaption>
+			Importance Sampling <br>
+			<code2>16 samples per pixel</code2> <br>
+			<code2>8 samples per light</code2>
+		</figcaption>
+	</figure>
+</div>
+
+<div class="gallery">
+	<figure>
+		<img src="results/part3_CBbunny_H_64_32.png" width="400">
+		<figcaption>
+			Hemisphere Sampling <br>
+			<code2>64 samples per pixel</code2> <br>
+			<code2>32 samples per light</code2>
+		</figcaption>
+	</figure>
+	<figure>
+		<img src="results/part3_bunny_64_32.png" width="400">
+		<figcaption>
+			Importance Sampling <br>
+			<code2>64 samples per pixel</code2> <br>
+			<code2>32 samples per light</code2>
+		</figcaption>
+	</figure>
+</div>
+
+<p>
+	comparison of noise
+</p>
+<div class="gallery">
+	<figure>
+		<img src="results/part3_bunny_1_1.png" width="400">
+		<figcaption>
+			Samples per Light: 1
+		</figcaption>
+	</figure>
+	<figure>
+		<img src="results/part3_bunny_1_4.png" width="400">
+		<figcaption>
+			Samples per Light: 4
+		</figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/part3_bunny_1_16.png" width="400">
+		<figcaption>
+			Samples per Light: 16
+		</figcaption>
+	</figure>
+	<figure>
+		<img src="results/part3_bunny_1_64.png" width="400">
+		<figcaption>
+			Samples per Light: 64
+		</figcaption>
+	</figure>
+</div>
+
+
+
+<h2 id="part-4">Part 4: Global Illumination</h2>
+<p>
+	examples, 1024 pixel, 4 light, m = 5
+</p>
+<div class="gallery">
+	<figure>
+		<img src="results/part4_dragon.png" width="400">
+		<figcaption>
+			<code2>dragon.dae</code2>
+		</figcaption>
+	</figure>
+	<figure>
+		<img src="results/part4_wall-e.png" width="400">
+		<figcaption>
+			<code2>wall-e.dae</code2>
+		</figcaption>
+	</figure>
+</div>
+
+<p>
+	1024 samples per pixel, m = 100, l = 1
+</p>
+<div class="gallery">
+	<figure>
+		<img src="results/part4_bunny_direct.png" width="400">
+		<figcaption>
+			Only direct illumination
+		</figcaption>
+	</figure>
+	<figure>
+		<img src="results/part4_bunny_indirect.png" width="400">
+		<figcaption>
+			Only indirect illumination
+		</figcaption>
+	</figure>
+</div>
+<p>
+	1024 samples per pixel, l = 1
+</p>
+<div class="gallery">
+	<figure>
+		<img src="results/part4_bunny_depth_0.png" width="400">
+		<figcaption>
+			<code2>max_ray_depth</code2> = 0
+		</figcaption>
+	</figure>
+</div>
+
+<div class="gallery">
+	<figure>
+		<img src="results/part4_bunny_depth_1.png" width="400">
+		<figcaption>
+			<code2>max_ray_depth</code2> = 1
+		</figcaption>
+	</figure>
+	<figure>
+		<img src="results/part4_bunny_depth_2.png" width="400">
+		<figcaption>
+			<code2>max_ray_depth</code2> = 2
+		</figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/part4_bunny_depth_3.png" width="400">
+		<figcaption>
+			<code2>max_ray_depth</code2> = 3
+		</figcaption>
+	</figure>
+	<figure>
+		<img src="results/part4_bunny_depth_100.png" width="400">
+		<figcaption>
+			<code2>max_ray_depth</code2> = 100
+		</figcaption>
+	</figure>
+</div>
+
+<p>
+	4 light rays, m = 5
+</p>
+<div class="gallery">
+	<figure>
+		<img src="results/part4_spheres_s_1.png" width="400">
+		<figcaption>
+			1 sample per pixel
+		</figcaption>
+	</figure>
+	<figure>
+		<img src="results/part4_spheres_s_2.png" width="400">
+		<figcaption>
+			2 samples per pixel
+		</figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/part4_spheres_s_4.png" width="400">
+		<figcaption>
+			4 samples per pixel
+		</figcaption>
+	</figure>
+	<figure>
+		<img src="results/part4_spheres_s_8.png" width="400">
+		<figcaption>
+			8 samples per pixel
+		</figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/part4_spheres_s_16.png" width="400">
+		<figcaption>
+			16 samples per pixel
+		</figcaption>
+	</figure>
+	<figure>
+		<img src="results/part4_spheres_s_64.png" width="400">
+		<figcaption>
+			64 samples per pixel
+		</figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/part4_spheres_s_1024.png" width="400">
+		<figcaption>
+			1024 samples per pixel
+		</figcaption>
+	</figure>
+</div>
+
+
+<h2 id="part-5">Part 5: Adaptive Sampling</h2>
+<p>
+	$$\mu = \frac{s_1}{n}$$
+	$$\sigma^2 = \frac{1}{n - 1} \cdot \Big( s_2 - \frac{s_1^2}{n} \Big) $$
+	$$ I = 1.96 \cdot \frac{\sigma}{\sqrt{n}} $$
+	$$ I \leq \text{maxTolerance} \cdot \mu $$
+</p>
+<p>
+	-s 2048 -a 64 0.05 -l 1 -m 5
+</p>
+<div class="gallery">
+	<figure>
+		<img src="results/part5_bunny.png" width="400">
+		<figcaption>
+			Result
+		</figcaption>
+	</figure>
+	<figure>
+		<img src="results/part5_bunny_rate.png" width="400">
+		<figcaption>
+			Sampling Rate
+		</figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/part5_spheres.png" width="400">
+		<figcaption>
+			Result
+		</figcaption>
+	</figure>
+	<figure>
+		<img src="results/part5_spheres_rate.png" width="400">
+		<figcaption>
+			Sampling Rate
+		</figcaption>
+	</figure>
+</div>
+
+</body>
 </html>
