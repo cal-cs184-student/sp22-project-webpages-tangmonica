@@ -1,7 +1,405 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 3-2 here
-	</body>
+<!doctype html>
+
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="author" content="Monica Tang">
+
+	<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+	<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-svg.js"></script>
+
+	<style>
+		*{
+			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif
+		}
+		p, ul, li {
+			line-height: 1.5;
+		}
+		body {
+			margin: 18%;
+			margin-top: 5%;
+			margin-bottom: 5%;
+		}
+		.toc {
+			margin-top: -16px;
+			font-size: small;
+		}
+		img {
+			margin: 5px;
+		}
+		figure {
+			margin: 5px;
+		}
+		figcaption{
+			text-align: center;
+		}
+		.gallery {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			overflow-x: visible;
+		}
+		.credit {
+			text-align: right;
+			margin-top: 0%;
+			color: dimgray;
+			font-size: small;
+		}
+		.vl {
+			border-left: 1px solid black;
+			height: 240px;
+		}
+		.code-block {
+			font-family: monospace;
+		}
+		.code-container {
+			display: flex;
+			justify-content: center;
+		}
+		code {
+			font-family: Consolas,"courier new";
+			color: crimson;
+			background-color: #f1f1f1;
+			padding: 2px;
+			font-size: 105%;
+		}
+		code2 {
+			font-family: Consolas,"courier new";
+			color: black;
+			background-color: #f1f1f1;
+			padding: 2px;
+			font-size: 80%;
+		}
+	</style>
+
+</head>
+
+<body>
+<h1 align="middle">Project 3-2: PathTracer</h1>
+<h3 align="middle">CS 184: Computer Graphics and Imaging, Spring 2022</h3>
+<h2 align="middle">Monica Tang</h2>
+
+<hr>
+<h4>Table of Contents:</h4>
+<p class="toc">
+	&emsp; <a href="#overview">Overview</a> <br>
+	&emsp; <a href="#part-1">Mirror and Glass Materials</a> <br>
+	&emsp; <a href="#part-2">Depth of Field</a> <br>
+</p>
+<hr>
+<h2 id="overview">Overview</h2>
+<p>
+	We will build upon the renderer we created in Project 3-1.
+	The 3-1 renderer allows us to render scenes of diffuse BRDF objects with global illumination using a pinhole camera model.
+	Now, in Project 3-2 we will add the ability to render mirror and glass objects.
+	We will also implement a thin lens camera model with aperture and focal length parameters to produce depth of field effects.
+</p>
+
+<h2 id="part-1">Part 1: Mirror and Glass Materials</h2>
+<h3>Mirror Material</h3>
+<div class="gallery">
+	<figure>
+		<figcaption>
+			Rendered with 1024 samples per pixel, 4 samples per light, <code2>max_ray_depth</code2> = 100 <br>
+		</figcaption>
+		<img src="results/part1/dragon.png" width="600">
+		<figcaption>
+			<code2>dragon.png</code2>
+		</figcaption>
+	</figure>
+</div>
+<p>
+	The mirror material requires us to implement perfect specular reflection.
+	The following diagram illustrates how a ray interacts with a reflective surface.
+</p>
+<div class="gallery">
+	<figure>
+		<img src="img/lec14_slide-10.jpeg" height="200">
+		<figcaption></figcaption>
+	</figure>
+</div>
+<p class="credit">Credit: CS184/284A Lecture 14 Slides by Ren Ng</p>
+<p>
+	Since we trace inverse rays,
+	given an outgoing ray \(\omega_o\) and the surface normal, we can calculate the ingoing ray \(\omega_i\):
+	$$ \omega_i + \omega_o = 2 \cos \theta \vec{n} = 2 (\omega_o \cdot \vec{n}) \vec{n}$$
+	$$ \omega_i = -\omega_o + 2 ( \omega_o \cdot \vec{n}) \vec{n}$$
+	Then we return the cosine weighted reflectance: \( \frac{\texttt{reflectance}}{|\cos \theta |} \).
+</p>
+<h3>Glass Material</h3>
+<div class="gallery">
+	<figure>
+		<figcaption>
+			Rendered with 1024 samples per pixel, 4 samples per light, <code2>max_ray_depth</code2> = 100 <br>
+		</figcaption>
+		<img src="results/part1/lucy.png" width="600">
+		<figcaption>
+			<code2>lucy.png</code2>
+		</figcaption>
+	</figure>
+</div>
+<p>
+	A glass material, in addition to reflection, also requires refraction.
+	For a ray that enter or exits a refractive object, we use Snell's Law (or the Law of Refraction)
+	$$\eta_i \sin \theta_i = \eta_t \sin \theta_t $$
+	where \(\eta_i\) and \(\eta_t\) are the indices of refraction.
+	It is also possible for a ray to not exit an object, and this is called total internal reflection.
+	The condition for it is given by
+	$$ 1 - \Big( \frac{\eta_i}{\eta_t} \Big)^2 (1 - \cos ^2 \theta_i) < 0. $$
+	The figure below shows a diagram for Snell's Law and the derivation of the total internal reflection condition.
+</p>
+<div class="gallery">
+	<figure>
+		<img src="img/lec14_slide-14.jpeg" width="500">
+		<figcaption></figcaption>
+	</figure>
+</div>
+<p class="credit">Credit: CS184/284A Lecture 1 Slides by Ren Ng</p>
+<p>
+	The main idea of the Glass BRDF implementation is:
+	<ul>
+	<li>
+		If there is total internal reflection, only reflection occurs, meaning
+		we set \(\omega_i = \text{reflection of } \omega_o\) and return the cosine weighted reflectance:
+		$$\frac{\texttt{reflectance}}{|\cos \theta |}.$$
+	</li>
+	<li>Otherwise, both reflection and refraction occur. But since we can only compute one ray,
+	we use Schlick's reflection coefficient (which represents the ratio of reflection energy to refraction energy)
+	to give us a probability of either reflecting or refracting.
+	Schlick's reflection coefficient is given by
+	$$ R = R_0 + (1 - R_0)(1 - \cos \theta)^5 $$
+	where
+	\( R_0 = \Big( \frac{1 - \text{ior}}{1 + \text{ior}}\Big)^2 \)
+	and \(\theta\) is the angle between the incident ray and the surface normal. Therefore
+		<ul>
+			<li>
+				If <code2>coin_flip(R)</code2>, we perform reflection and return
+				$$R \cdot \frac{\texttt{reflectance}}{|\cos \theta |}. $$
+			</li>
+			<li>
+				Otherwise, we perform refraction. To calculate the ingoing ray (we trace inverse rays)
+				$$ \omega_i =  (-\eta \: \omega_o.x,\ -\eta \: \omega_o.y,\ \mp \sqrt{1 - \eta^2 (1 - \omega_o.z^2)}) $$
+				where \(\eta = 1/\text{ior}\) if the ray is entering the object of index of refraction \(\text{ior}\),
+				and \(\eta = \text{ior}\) if the ray is exiting the object.
+				Then we return
+				$$(1 - R) \cdot \frac{\texttt{transmittance}}{|\cos \theta | \cdot \eta^2}. $$
+			</li>
+		</ul>
+	</li>
+	</ul>
+	where \(\theta\) is the angle between the incident ray and the surface normal.
+</p>
+<h3>Multi-Bounce Effects</h3>
+<div class="gallery">
+	<figure>
+		<img src="results/part1/spheres.png" width="600">
+		<figcaption>
+			<code2>spheres.png</code2>
+		</figcaption>
+	</figure>
+</div>
+<p>
+	With these new materials, we can visualize how light interacts with them, creating new visual effects.
+	For objects with a diffuse material,
+	only one bounce is needed for the objects to render (albeit without global illumination).
+	Mirror materials require at least 2 bounces, and glass materials require at least 3.
+	As we increase the <code2>max_ray_depth</code2>, we can view these light interactions take place.
+	(The following were rendered with 64 samples per pixel and 4 samples per light.)
+</p>
+<div class="gallery">
+	<figure>
+		<img src="results/part1/spheres_m0.png" width="400">
+		<figcaption>
+			<code2>max_ray_depth = 0</code2>
+		</figcaption>
+	</figure>
+	<figure>
+		<img src="results/part1/spheres_m1.png" width="400">
+		<figcaption>
+			<code2>max_ray_depth = 1</code2>
+		</figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/part1/spheres_m2.png" width="400">
+		<figcaption>
+			<code2>max_ray_depth = 2</code2>
+		</figcaption>
+	</figure>
+	<figure>
+		<img src="results/part1/spheres_m3.png" width="400">
+		<figcaption>
+			<code2>max_ray_depth = 3</code2>
+		</figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/part1/spheres_m4.png" width="400">
+		<figcaption>
+			<code2>max_ray_depth = 4</code2>
+		</figcaption>
+	</figure>
+	<figure>
+		<img src="results/part1/spheres_m5.png" width="400">
+		<figcaption>
+			<code2>max_ray_depth = 5</code2>
+		</figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/part1/spheres_m100.png" width="400">
+		<figcaption>
+			<code2>max_ray_depth = 100</code2>
+		</figcaption>
+	</figure>
+</div>
+<p>
+<ul>
+	<li>
+		<code2>max_ray_depth = 0</code2>: <b>zero bounce radiance</b>; Only the light sources is visible.
+	</li>
+	<li>
+		<code2>max_ray_depth = 1</code2>: <b>direct lighting</b>;
+		We can see the diffuse surfaces and only the specular highlights on the reflective objects.
+	</li>
+	<li>
+		<code2>max_ray_depth = 2</code2>: <b>global illumination and reflections</b>;
+		Now, we can see the mirror material.
+		Light bounces off a surface, then off the mirror, and finally toward the camera.
+		We can see a faint reflection on the glass sphere, but refraction still does not render properly at this stage.
+	</li>
+	<li>
+		<code2>max_ray_depth = 3</code2>: <b>refraction and caustics</b>;
+		Now, the glass material is visible.
+		The hot spot of light concentrated where the sphere meets the ground is called caustics.
+		Glass materials need an extra bounce of light to render properly
+		because a ray must first bounce off a surface, then both enter and exit the object before reaching the camera.
+	</li>
+	<li>
+		<code2>max_ray_depth >= 4</code2>: <b>more caustics</b>;
+		The caustics are even more apparent and realistic with at least 4 bounces of light.
+		We can see how the hot spot of light near where the sphere meets the ground also reflects back onto the sphere itself.
+		There is also a small spot of light on the right wall.
+	</li>
+</ul>
+</p>
+
+<h2 id="part-2">Depth of Field</h2>
+<p>
+	In Project 3-1, we rendered scenes using a pinhole camera model (resulting in images like the one below).
+</p>
+<div class="gallery">
+	<figure>
+		<img src="results/part4/dragon_pinhole.png" width="500">
+		<figcaption>
+			Pinhole Camera Model
+		</figcaption>
+	</figure>
+</div>
+<p>
+	With a pinhole camera model, everything in the scene is in focus
+	(e.g. the head of the dragon, the tail of the dragon, and even the wall corners).
+	But to simulate how real cameras and our eyes see things, a thin lens is a better model.
+	With a thin lens model, we can produce depth of field effects where
+	some parts of the image are in focus and others are out-of-focus depending on our lens radius (aperture) and focal length settings.
+	To implement this, we need to make changes to how we generate a camera ray.
+</p>
+<p>
+	How rays interact with the lens is illustrated in the diagram below.
+	Unlike in the pinhole model where the pixel only receives radiance from \((0, 0, 0)\),
+	in the lens model, the pixel can receive radiance from any point on the lens which means we need to uniformly sample it.
+	Then, once we have the sample, we can calculate the blue ray and return it.
+</p>
+<div class="gallery">
+	<figure>
+		<img src="img/thin_lens.jpeg" width="500">
+		<figcaption>
+			Rays in camera space
+		</figcaption>
+	</figure>
+</div>
+
+<p>
+	Changing the aperture (lens radius) size affects the amount of blur for the out-of-focus areas.
+	In the renders below, we set a fixed focal length, so the head of the dragon is in focus for all four images.
+	As we increase the aperture, objects not in the plane of focus become more and more blurry.
+</p>
+<div class="gallery">
+	<figure>
+		<img src="results/part4/dragon_lens0.png" width="400">
+		<figcaption>
+			<code2>lens radius = 0.05</code2> <br>
+			<code2>focal length = 2.44</code2>
+		</figcaption>
+	</figure>
+	<figure>
+		<img src="results/part4/dragon_lens1.png" width="400">
+		<figcaption>
+			<code2>lens radius = 0.15</code2> <br>
+			<code2>focal length = 2.44</code2>
+		</figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/part4/dragon_lens2.png" width="400">
+		<figcaption>
+			<code2>lens radius = 0.25</code2> <br>
+			<code2>focal length = 2.44</code2>
+		</figcaption>
+	</figure>
+	<figure>
+		<img src="results/part4/dragon_lens3.png" width="400">
+		<figcaption>
+			<code2>lens radius = 0.35</code2> <br>
+			<code2>focal length = 2.44</code2>
+		</figcaption>
+	</figure>
+</div>
+
+<p>
+	Changing the focal lengths affects the where the plane of focus lies.
+	The following images have a fixed aperture, and as we increase the focal length,
+	we can see how different parts of the dragon become in focus.
+</p>
+<div class="gallery">
+	<figure>
+		<img src="results/part4/dragon_lens2.png" width="400">
+		<figcaption>
+			<code2>lens radius = 0.25</code2> <br>
+			<code2>focal length = 2.44</code2>
+		</figcaption>
+	</figure>
+	<figure>
+		<img src="results/part4/dragon_depth1.png" width="400">
+		<figcaption>
+			<code2>lens radius = 0.25</code2> <br>
+			<code2>focal length = 2.64</code2>
+		</figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/part4/dragon_depth2.png" width="400">
+		<figcaption>
+			<code2>lens radius = 0.25</code2> <br>
+			<code2>focal length = 2.84</code2>
+		</figcaption>
+	</figure>
+	<figure>
+		<img src="results/part4/dragon_depth3.png" width="400">
+		<figcaption>
+			<code2>lens radius = 0.25</code2> <br>
+			<code2>focal length = 3.04</code2>
+		</figcaption>
+	</figure>
+</div>
+
+
+
+</body>
 </html>
