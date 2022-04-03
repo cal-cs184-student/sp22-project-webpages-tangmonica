@@ -96,7 +96,7 @@
 	We will also implement a thin lens camera model with aperture and focal length parameters to produce depth of field effects.
 </p>
 
-<h2 id="part-1">Part 1: Mirror and Glass Materials</h2>
+<h2 id="part-1">Mirror and Glass Materials</h2>
 <h3>Mirror Material</h3>
 <div class="gallery">
 	<figure>
@@ -123,9 +123,10 @@
 <p>
 	Since we trace inverse rays,
 	given an outgoing ray \(\omega_o\) and the surface normal, we can calculate the ingoing ray \(\omega_i\):
-	$$ \omega_i + \omega_o = 2 \cos \theta \vec{n} = 2 (\omega_o \cdot \vec{n}) \vec{n}$$
+	$$ \omega_i + \omega_o = 2 \cos \theta \ \vec{n} = 2 (\omega_o \cdot \vec{n}) \vec{n}$$
 	$$ \omega_i = -\omega_o + 2 ( \omega_o \cdot \vec{n}) \vec{n}$$
-	Then we return the cosine weighted reflectance: \( \frac{\texttt{reflectance}}{|\cos \theta |} \).
+	Then we return the cosine weighted reflectance: \( \frac{\texttt{reflectance}}{|\cos \theta |} \)
+	where \(\theta\) is the angle between the incident ray and the surface normal (as depicted in the above diagram).
 </p>
 <h3>Glass Material</h3>
 <div class="gallery">
@@ -141,10 +142,10 @@
 </div>
 <p>
 	A glass material, in addition to reflection, also requires refraction.
-	For a ray that enter or exits a refractive object, we use Snell's Law (or the Law of Refraction)
+	For a ray that enters or exits a refractive object, we use Snell's Law (or the Law of Refraction)
 	$$\eta_i \sin \theta_i = \eta_t \sin \theta_t $$
 	where \(\eta_i\) and \(\eta_t\) are the indices of refraction.
-	It is also possible for a ray to not exit an object, and this is called total internal reflection.
+	It is also possible for a ray to not exit an object after entering, and this phenomenon called total internal reflection.
 	The condition for it is given by
 	$$ 1 - \Big( \frac{\eta_i}{\eta_t} \Big)^2 (1 - \cos ^2 \theta_i) < 0. $$
 	The figure below shows a diagram for Snell's Law and the derivation of the total internal reflection condition.
@@ -165,20 +166,19 @@
 		$$\frac{\texttt{reflectance}}{|\cos \theta |}.$$
 	</li>
 	<li>Otherwise, both reflection and refraction occur. But since we can only compute one ray,
-	we use Schlick's reflection coefficient (which represents the ratio of reflection energy to refraction energy)
-	to give us a probability of either reflecting or refracting.
-	Schlick's reflection coefficient is given by
+		we randomly choose to either reflect or refract depending on Schlick's reflection coefficient.
+	This reflection coefficient represents the ratio of reflection energy to refraction energy and is given by
 	$$ R = R_0 + (1 - R_0)(1 - \cos \theta)^5 $$
 	where
 	\( R_0 = \Big( \frac{1 - \text{ior}}{1 + \text{ior}}\Big)^2 \)
 	and \(\theta\) is the angle between the incident ray and the surface normal. Therefore
 		<ul>
 			<li>
-				If <code2>coin_flip(R)</code2>, we perform reflection and return
+				If <code2>coin_flip(R)</code2> returns <code2>true</code2>, we perform reflection and return
 				$$R \cdot \frac{\texttt{reflectance}}{|\cos \theta |}. $$
 			</li>
 			<li>
-				Otherwise, we perform refraction. To calculate the ingoing ray (we trace inverse rays)
+				Otherwise, we perform refraction. To calculate the ingoing ray (we trace inverse rays),
 				$$ \omega_i =  (-\eta \: \omega_o.x,\ -\eta \: \omega_o.y,\ \mp \sqrt{1 - \eta^2 (1 - \omega_o.z^2)}) $$
 				where \(\eta = 1/\text{ior}\) if the ray is entering the object of index of refraction \(\text{ior}\),
 				and \(\eta = \text{ior}\) if the ray is exiting the object.
@@ -188,7 +188,6 @@
 		</ul>
 	</li>
 	</ul>
-	where \(\theta\) is the angle between the incident ray and the surface normal.
 </p>
 <h3>Multi-Bounce Effects</h3>
 <div class="gallery">
@@ -200,7 +199,7 @@
 	</figure>
 </div>
 <p>
-	With these new materials, we can visualize how light interacts with them, creating new visual effects.
+	With these new materials, we can visualize how light interacts with them and creates new visual effects.
 	For objects with a diffuse material,
 	only one bounce is needed for the objects to render (albeit without global illumination).
 	Mirror materials require at least 2 bounces, and glass materials require at least 3.
@@ -260,29 +259,29 @@
 <p>
 <ul>
 	<li>
-		<code2>max_ray_depth = 0</code2>: <b>zero bounce radiance</b>; Only the light sources is visible.
+		<code2>max_ray_depth = 0</code2>: <b>zero bounce radiance</b>; Only the light source is visible.
 	</li>
 	<li>
 		<code2>max_ray_depth = 1</code2>: <b>direct lighting</b>;
-		We can see the diffuse surfaces and only the specular highlights on the reflective objects.
+		We can see the diffuse surfaces and the specular highlights on the reflective objects.
 	</li>
 	<li>
 		<code2>max_ray_depth = 2</code2>: <b>global illumination and reflections</b>;
 		Now, we can see the mirror material.
 		Light bounces off a surface, then off the mirror, and finally toward the camera.
-		We can see a faint reflection on the glass sphere, but refraction still does not render properly at this stage.
+		We can also see a faint reflection on the glass sphere, but refraction still does not render properly at this stage.
 	</li>
 	<li>
 		<code2>max_ray_depth = 3</code2>: <b>refraction and caustics</b>;
 		Now, the glass material is visible.
-		The hot spot of light concentrated where the sphere meets the ground is called caustics.
-		Glass materials need an extra bounce of light to render properly
+		The hot spot of concentrated light where the sphere meets the ground is called caustics.
+		Glass materials need at least 3 bounces of light to render properly
 		because a ray must first bounce off a surface, then both enter and exit the object before reaching the camera.
 	</li>
 	<li>
 		<code2>max_ray_depth >= 4</code2>: <b>more caustics</b>;
 		The caustics are even more apparent and realistic with at least 4 bounces of light.
-		We can see how the hot spot of light near where the sphere meets the ground also reflects back onto the sphere itself.
+		We can see how the hot spot of light where the sphere meets the ground also reflects back onto the sphere itself.
 		There is also a small spot of light on the right wall.
 	</li>
 </ul>
@@ -362,7 +361,7 @@
 </div>
 
 <p>
-	Changing the focal lengths affects the where the plane of focus lies.
+	Changing the focal length affects where the plane of focus lies.
 	The following images have a fixed aperture, and as we increase the focal length,
 	we can see how different parts of the dragon become in focus.
 </p>
