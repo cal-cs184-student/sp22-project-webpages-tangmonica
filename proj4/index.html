@@ -1,7 +1,367 @@
-<html>
-	<head>
-	</head>
-	<body>
-		Project 4 here
-	</body>
+<!doctype html>
+
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<meta name="author" content="Monica Tang">
+
+	<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+	<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-svg.js"></script>
+
+	<style>
+		*{
+			font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif
+		}
+		p, ul, li {
+			line-height: 1.5;
+		}
+		body {
+			margin: 18%;
+			margin-top: 5%;
+			margin-bottom: 5%;
+		}
+		.toc {
+			margin-top: -16px;
+			font-size: small;
+		}
+		img {
+			margin: 5px;
+		}
+		figure {
+			margin: 5px;
+		}
+		figcaption{
+			text-align: center;
+		}
+		.gallery {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			overflow-x: visible;
+		}
+		.credit {
+			text-align: right;
+			margin-top: 0%;
+			color: dimgray;
+			font-size: small;
+		}
+		.vl {
+			border-left: 1px solid black;
+			height: 240px;
+		}
+		.code-block {
+			font-family: monospace;
+		}
+		.code-container {
+			display: flex;
+			justify-content: center;
+		}
+		code {
+			font-family: Consolas,"courier new";
+			color: crimson;
+			background-color: #f1f1f1;
+			padding: 2px;
+			font-size: 105%;
+		}
+		code2 {
+			font-family: Consolas,"courier new";
+			color: black;
+			background-color: #f1f1f1;
+			padding: 2px;
+			font-size: 80%;
+		}
+	</style>
+
+</head>
+
+<body>
+<h1 align="middle">Project 4: Cloth Simulation</h1>
+<h3 align="middle">CS 184: Computer Graphics and Imaging, Spring 2022</h3>
+<h2 align="middle">Monica Tang</h2>
+
+<hr>
+<h4>Table of Contents:</h4>
+<p class="toc">
+	&emsp; <a href="#overview">Overview</a> <br>
+	&emsp; <a href="#part-1">Part 1: Masses and Springs</a> <br>
+	&emsp; <a href="#part-2">Part 2: Simulation via numerical integration</a> <br>
+	&emsp; <a href="#part-3">Part 3: Handling collisions with other objects</a> <br>
+	&emsp; <a href="#part-4">Part 4: Handling self-collisions</a> <br>
+	&emsp; <a href="#part-5">Part 5: Shaders</a> <br>
+</p>
+<hr>
+<h2 id="overview">Overview</h2>
+<p>
+
+</p>
+
+<h2 id="part-1">Part 1: Masses and Springs</h2>
+<div class="gallery">
+	<figure>
+		<img src="results/part1_shearing.png" width="450">
+		<figcaption style="margin-top: -20px"> Shearing </figcaption>
+	</figure>
+	<figure>
+		<img src="results/part1_no_shearing.png" width="450">
+		<figcaption style="margin-top: -20px"> No Shearing </figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/part1_all.png" width="700">
+		<figcaption style="margin-top: -30px"> All constraints </figcaption>
+	</figure>
+</div>
+
+<h2 id="part-2">Part 2: Simulation via numerical integration</h2>
+<div class="gallery">
+	<figure>
+		<img src="results/part2_pinned2_wireframe.png" width="450">
+		<figcaption style="margin-top: -20px"> Wireframe </figcaption>
+	</figure>
+	<figure>
+		<img src="results/part2_pinned2_original.png" width="450">
+		<figcaption style="margin-top: -20px"> Normal Shading </figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/part2_pinned2_ks500.png" width="450">
+		<figcaption style="margin-top: -20px"> <code2>ks = 500 N/m</code2> </figcaption>
+	</figure>
+	<figure>
+		<img src="results/part2_pinned2_ks50000.png" width="450">
+		<figcaption style="margin-top: -20px"> <code2>ks = 50000 N/m</code2> </figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/part2_pinned2_density5.png" width="450">
+		<figcaption style="margin-top: -20px"> <code2>density = 5 g/cm^2</code2> </figcaption>
+	</figure>
+	<figure>
+		<img src="results/part2_pinned2_density25.png" width="450">
+		<figcaption style="margin-top: -20px"> <code2>density = 25 g/cm^2</code2> </figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<video width="425" controls><source src="results/part2_pinned2_damping_low.mov"></video>
+		<figcaption style="margin-top: 10px"> Low Damping </figcaption>
+	</figure>
+	<figure>
+		<video width="425" controls><source src="results/part2_pinned2_damping_high.mov"></video>
+		<figcaption style="margin-top: 10px"> High Damping </figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/part2_pinned4.png" width="700">
+		<figcaption style="margin-top: -30px"> <code2>pinned4</code2> </figcaption>
+	</figure>
+</div>
+
+
+<h2 id="part-3">Part 3: Handling collisions with other objects</h2>
+<div class="gallery">
+	<figure>
+		<img src="results/part3_sphere_ks5000.png" width="450">
+		<figcaption style="margin-top: -20px"> <code2>ks = 5000 N/m</code2> </figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/part3_sphere_ks500.png" width="450">
+		<figcaption style="margin-top: -20px"> <code2>ks = 500 N/m</code2> </figcaption>
+	</figure>
+	<figure>
+		<img src="results/part3_sphere_ks50000.png" width="450">
+		<figcaption style="margin-top: -20px"> <code2>ks = 50000 N/m</code2> </figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/part3_plane.png" width="700">
+		<figcaption style="margin-top: -30px"> <code2>Cloth-Plane Collision</code2> </figcaption>
+	</figure>
+</div>
+
+<h2 id="part-4">Part 4: Handling self-collisions</h2>
+<div class="gallery">
+	<figure>
+		<img src="results/part4_original_1.png" height="400">
+		<figcaption></figcaption>
+	</figure>
+	<figure>
+		<img src="results/part4_original_2.png" height="400">
+		<figcaption></figcaption>
+	</figure>
+	<figure>
+		<img src="results/part4_original_3.png" height="400">
+		<figcaption></figcaption>
+	</figure>
+</div>
+<figcaption>
+	<code2>ks = 5000 N/m</code2> <br>
+	<code2> density = 15 g/cm^2</code2>
+</figcaption>
+
+
+<div class="gallery">
+	<figure>
+		<img src="results/part4_ks_low_1.png" width="300">
+		<figcaption></figcaption>
+	</figure>
+	<figure>
+		<img src="results/part4_ks_low_2.png" width="300">
+		<figcaption></figcaption>
+	</figure>
+	<figure>
+		<img src="results/part4_ks_low_3.png" width="300">
+		<figcaption></figcaption>
+	</figure>
+</div>
+<figcaption><code2>ks = 500 N/m</code2></figcaption>
+<div class="gallery">
+	<figure>
+		<img src="results/part4_ks_high_1.png" width="300">
+		<figcaption></figcaption>
+	</figure>
+	<figure>
+		<img src="results/part4_ks_high_2.png" width="300">
+		<figcaption></figcaption>
+	</figure>
+	<figure>
+		<img src="results/part4_ks_high_3.png" width="300">
+		<figcaption></figcaption>
+	</figure>
+</div>
+<figcaption><code2>ks = 50000 N/m</code2></figcaption>
+
+
+<div class="gallery">
+	<figure>
+		<img src="results/part4_density_low_1.png" width="300">
+		<figcaption></figcaption>
+	</figure>
+	<figure>
+		<img src="results/part4_density_low_2.png" width="300">
+		<figcaption></figcaption>
+	</figure>
+	<figure>
+		<img src="results/part4_density_low_3.png" width="300">
+		<figcaption></figcaption>
+	</figure>
+</div>
+<figcaption><code2>density = 5 g/cm^2</code2></figcaption>
+<div class="gallery">
+	<figure>
+		<img src="results/part4_density_high_1.png" width="300">
+		<figcaption></figcaption>
+	</figure>
+	<figure>
+		<img src="results/part4_density_high_2.png" width="300">
+		<figcaption></figcaption>
+	</figure>
+	<figure>
+		<img src="results/part4_density_high_3.png" width="300">
+		<figcaption></figcaption>
+	</figure>
+</div>
+<figcaption><code2>density = 25 g/cm^2</code2></figcaption>
+
+
+
+<h2 id="part-5">Part 5: Shaders</h2>
+<h3>Diffuse and Blinn-Phong Shaders</h3>
+<div class="gallery">
+	<figure>
+		<img src="results/part5_phong_all.png" width="450">
+		<figcaption style="margin-top: -20px"> Blinn-Phong Shading </figcaption>
+	</figure>
+	<figure>
+		<img src="results/part5_phong_ambient.png" width="450">
+		<figcaption style="margin-top: -20px"> Only Ambient </figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/part5_phong_diffuse.png" width="450">
+		<figcaption style="margin-top: -20px"> Only Diffuse </figcaption>
+	</figure>
+	<figure>
+		<img src="results/part5_phong_specular.png" width="450">
+		<figcaption style="margin-top: -20px"> Only Specular </figcaption>
+	</figure>
+</div>
+
+<h3>Texture Mapping</h3>
+<div class="gallery">
+	<figure>
+		<img src="img/texture_1.png" width="250">
+		<figcaption> Texture </figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/part5_texture_sphere.png" width="450">
+		<figcaption style="margin-top: -20px"> Texture Mapping with Sphere </figcaption>
+	</figure>
+	<figure>
+		<img src="results/part5_texture_cloth.png" width="450">
+		<figcaption style="margin-top: -20px"> Texture Mapping with Cloth</figcaption>
+	</figure>
+</div>
+
+<h3>Bump and Displacement Mapping</h3>
+<div class="gallery">
+	<figure>
+		<img src="results/part5_bump_cloth.png" width="250">
+		<figcaption> Bump Mapping</figcaption>
+	</figure>
+	<figure>
+		<img src="results/part5_bump_sphere.png" width="250">
+		<figcaption> Bump Mapping</figcaption>
+	</figure>
+	<figure>
+		<img src="results/part5_displacement_sphere.png" width="250">
+		<figcaption> Displacement Mapping </figcaption>
+	</figure>
+</div>
+
+<div class="gallery">
+	<figure>
+		<img src="results/part5_bump_16.png" width="450">
+		<figcaption style="margin-top: -20px"> Bump Mapping <br> <code2>resolution = 16</code2> </figcaption>
+	</figure>
+	<figure>
+		<img src="results/part5_displacement_16.png" width="450">
+		<figcaption style="margin-top: -20px"> Displacement Mapping  <br> <code2>resolution = 16</code2> </figcaption>
+	</figure>
+</div>
+<div class="gallery">
+	<figure>
+		<img src="results/part5_bump_128.png" width="450">
+		<figcaption style="margin-top: -20px"> Bump Mapping <br> <code2>resolution = 128</code2> </figcaption>
+	</figure>
+	<figure>
+		<img src="results/part5_displacement_128.png" width="450">
+		<figcaption style="margin-top: -20px"> Displacement Mapping  <br> <code2>resolution = 128</code2> </figcaption>
+	</figure>
+</div>
+
+<h3>Mirror Shader</h3>
+<div class="gallery">
+	<figure>
+		<img src="results/part5_mirror_sphere.png" width="450">
+		<figcaption style="margin-top: -20px"> Mirror Shading with Sphere </figcaption>
+	</figure>
+	<figure>
+		<img src="results/part5_mirror_cloth.png" width="450">
+		<figcaption style="margin-top: -20px"> Mirror Shading with Cloth</figcaption>
+	</figure>
+</div>
+
+</body>
 </html>
