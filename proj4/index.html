@@ -93,14 +93,30 @@
 <hr>
 <h2 id="overview">Overview</h2>
 <p>
-
+	In this project, we will build a real-time cloth simulation using a mass and spring system
+	as well as write a variety of shaders.
+	Parts 1 through 4 detail the process for creating the cloth simulation, and Part 5 pertains to the shaders.
 </p>
 
 <h2 id="part-1">Part 1: Masses and Springs</h2>
+<p>
+	To represent a cloth, we will use the mass and spring model
+	in which we construct a grid of evenly spaced masses and connect nearby masses with springs.
+</p>
+<p>
+	There are three types of constraints that can occur between point masses: structural, shearing, and bending.
+	Each spring will apply one of these three constraints.
+	Structural constraints exist between a point mass and the point mass to its left as well as the point mass above it.
+	Shearing constraints exist between a point mass and the point mass to its diagonal upper left and the point mass to its upper right.
+	Bending constraints exist between a point mass and the point mass two away to its left and the point mass two above it.
+</p>
+<p>
+	The images below depict the mass-spring grid with various spring types turned on or off.
+</p>
 <div class="gallery">
 	<figure>
 		<img src="results/part1_shearing.png" width="450">
-		<figcaption style="margin-top: -20px"> Shearing </figcaption>
+		<figcaption style="margin-top: -20px"> Only Shearing </figcaption>
 	</figure>
 	<figure>
 		<img src="results/part1_no_shearing.png" width="450">
@@ -110,11 +126,44 @@
 <div class="gallery">
 	<figure>
 		<img src="results/part1_all.png" width="700">
-		<figcaption style="margin-top: -30px"> All constraints </figcaption>
+		<figcaption style="margin-top: -30px"> All Constraints </figcaption>
 	</figure>
 </div>
 
 <h2 id="part-2">Part 2: Simulation via numerical integration</h2>
+<div class="gallery">
+	<figure>
+		<img src="results/part2_pinned4.png" width="600">
+		<figcaption style="margin-top: -30px"> <code2>pinned4</code2> </figcaption>
+	</figure>
+</div>
+<p>
+	Now that we have the mass-spring system that models the cloth, we want to simulate the cloth's movement
+	by integrating the physical equations of motion.
+	At each time step, forces are applied on the point masses and the point mass positions are updated.
+</p>
+<p>
+	The forces that need to be applied to the point masses are external forces (such as gravity)
+	and spring-correction forces (which apply the spring constraints and are calculated using Hooke's law).
+</p>
+<p>
+	Then, to update the point mass positions, we will use the explicit integrator: Verlet integration.
+	We will also add a damping term to simulate loss of energy due to friction, heat loss, etc.
+	The point mass's new position \(x_{t + dt}\) is then given by
+	$$ x_{t + dt} = x_t + (1 - d) \cdot (x_t - x_{t - dt}) + a_t \cdot dt^2$$
+	where \(x_t\) is the current position, \(d\) is the damping term,
+	\(x_t - x_{t - dt}\) approximates \(v_t \cdot dt\) which is the current velocity times the timestep,
+	\(a_t\) is the current total acceleration from all forces, and \(dt\) is the timestep.
+</p>
+<p>
+	Finally, we will add some additional position update constraints.
+	In particular, we want to limit a spring's length to be at most 10% greater than its rest length.
+	Therefore, if needed, we will correct the point mass positions of each spring so that this condition is met.
+</p>
+<p>
+	The two images below show the same cloth at its rest state after undergoing the simulation.
+	We can visualize the mass-spring system with the Wireframe model and the folds of the cloth with Normal shading.
+</p>
 <div class="gallery">
 	<figure>
 		<img src="results/part2_pinned2_wireframe.png" width="450">
@@ -125,6 +174,11 @@
 		<figcaption style="margin-top: -20px"> Normal Shading </figcaption>
 	</figure>
 </div>
+<p>
+	Changing the parameters of the simulation produces different results.
+	For example, a lower spring constant <code2>ks</code2> will give the appearance and behavior of a more flexible cloth.
+	Meanwhile, a higher spring constant simulates a stiffer cloth.
+</p>
 <div class="gallery">
 	<figure>
 		<img src="results/part2_pinned2_ks500.png" width="450">
@@ -135,6 +189,10 @@
 		<figcaption style="margin-top: -20px"> <code2>ks = 50000 N/m</code2> </figcaption>
 	</figure>
 </div>
+<p>
+	The density of the cloth also has an impact on its final rest state.
+	Below, the higher density cloth is pulled downwards (by its own weight) more so than the lower density cloth.
+</p>
 <div class="gallery">
 	<figure>
 		<img src="results/part2_pinned2_density5.png" width="450">
@@ -145,6 +203,11 @@
 		<figcaption style="margin-top: -20px"> <code2>density = 25 g/cm^2</code2> </figcaption>
 	</figure>
 </div>
+<p>
+	The damping factor also plays a role in the cloth's behavior.
+	As shown in the videos below, a higher damping factor will cause the cloth to end up at its rest state more directly.
+	The cloth with a low damping factor moved back and forth before reaching its rest state.
+</p>
 <div class="gallery">
 	<figure>
 		<video width="425" controls><source src="results/part2_pinned2_damping_low.mov"></video>
@@ -155,21 +218,38 @@
 		<figcaption style="margin-top: 10px"> High Damping </figcaption>
 	</figure>
 </div>
-<div class="gallery">
-	<figure>
-		<img src="results/part2_pinned4.png" width="700">
-		<figcaption style="margin-top: -30px"> <code2>pinned4</code2> </figcaption>
-	</figure>
-</div>
 
 
 <h2 id="part-3">Part 3: Handling collisions with other objects</h2>
+<p>
+	Previously, we were able to simulate how a cloth drapes when pinned at certain corners.
+	Now, let's see how the cloth interacts with other objects by simulating collisions with other objects.
+</p>
+<p>
+	We will add support for cloth-sphere and cloth-plane collisions.
+	The general idea is: when any point mass's position intersects/enters an object,
+	we will correct the position and "bump" it back to the surface of the object.
+</p>
+<p>
+	The following show a piece of cloth draped over a sphere and a piece of cloth at rest on a plane.
+</p>
 <div class="gallery">
 	<figure>
 		<img src="results/part3_sphere_ks5000.png" width="450">
-		<figcaption style="margin-top: -20px"> <code2>ks = 5000 N/m</code2> </figcaption>
+		<figcaption style="margin-top: -20px"> <code2>Cloth-Sphere Collision</code2> </figcaption>
+	</figure>
+	<figure>
+		<img src="results/part3_plane.png" width="450">
+		<figcaption style="margin-top: -25px"> <code2>Cloth-Plane Collision</code2> </figcaption>
 	</figure>
 </div>
+<p>
+	Again, we can adjust the cloth parameters such as the spring constant.
+	As depicted below, a lower spring constant gives the appearance of a thinner, stretchier material while
+	the higher spring constant makes the cloth look stiff.
+	The cloth-sphere collision image from above uses a spring constant of 5000 N/m,
+	so its stiffness lies between those of the two cloths below.
+</p>
 <div class="gallery">
 	<figure>
 		<img src="results/part3_sphere_ks500.png" width="450">
@@ -180,14 +260,17 @@
 		<figcaption style="margin-top: -20px"> <code2>ks = 50000 N/m</code2> </figcaption>
 	</figure>
 </div>
-<div class="gallery">
-	<figure>
-		<img src="results/part3_plane.png" width="700">
-		<figcaption style="margin-top: -30px"> <code2>Cloth-Plane Collision</code2> </figcaption>
-	</figure>
-</div>
 
 <h2 id="part-4">Part 4: Handling self-collisions</h2>
+<p>
+	One issue that we may have encountered in the previous parts is the cloth clipping through itself.
+	Adding support for self-collisions will fix this behavior.
+</p>
+<p>
+	In each of the following groups of three images,
+	a cloth is shown at its early stage of falling, its middle stage, and its final resting state.
+	The cloth below uses the default parameters.
+</p>
 <div class="gallery">
 	<figure>
 		<img src="results/part4_original_1.png" height="400">
@@ -207,7 +290,11 @@
 	<code2> density = 15 g/cm^2</code2>
 </figcaption>
 
-
+<p>
+	Like how we did in previous parts, we can adjust these parameters to produce simulations that exhibit different cloth behaviors.
+	A low spring constant allows for more fine wrinkles, so the final resting state of the low spring constant cloth is more "bunched up".
+	On the other hand, the high spring constant cloth has far less wrinkles and flattens out as it reaches its resting state.
+</p>
 <div class="gallery">
 	<figure>
 		<img src="results/part4_ks_low_1.png" width="300">
@@ -239,7 +326,12 @@
 </div>
 <figcaption><code2>ks = 50000 N/m</code2></figcaption>
 
-
+<p>
+	Changing the density of the cloths does not have as dramatic of a difference.
+	A slight difference is in how "open" the folds of each cloth are.
+	The low density cloth has wider and more "open" folds, mainly visible in the early stage and resting state images.
+	The high density cloth has flatter folds in comparison, most noticeable in the resting state image.
+</p>
 <div class="gallery">
 	<figure>
 		<img src="results/part4_density_low_1.png" width="300">
@@ -274,7 +366,31 @@
 
 
 <h2 id="part-5">Part 5: Shaders</h2>
+<p>
+	Now that we have a cloth simulator, let's build some shaders so that we can visualize the cloth in a variety of ways.
+	We will write diffuse, blinn-phong, texture mapping, bump mapping, displacement mapping, and mirror shaders.
+	A shader is a program that runs in parallel on the GPU, letting us render materials for real-time applications such as our cloth simulation.
+	We will write our shaders in GLSL and use OpenGL vertex and fragment shaders.
+	Vertex shaders apply the transforms to the vertices and modify geometric properties.
+	Fragment shaders take in geometric attributes (calculated by the vertex shader) and output a color.
+	Corresponding vertex and fragments shaders are linked together to form the shader program:
+	the output of the vertex shader is the input to the fragment shader.
+</p>
 <h3>Diffuse and Blinn-Phong Shaders</h3>
+<p>
+	The Blinn-Phong shading model is comprised of multiple components: ambient light, diffuse light, and specular reflection.
+	The overall Blinn-Phong reflection is a sum of these three components. This is shown in the following equation
+</p>
+<div class="gallery">
+	<figure>
+		<img src="img/lec6_slide-31.jpeg" width="600">
+		<figcaption></figcaption>
+	</figure>
+</div>
+<p class="credit">Credit: CS184/284A Lecture 6 Slides by Ren Ng</p>
+<p>
+	Each of the three components (as well as the full Blinn-Phong shading model) are illustrated below.
+</p>
 <div class="gallery">
 	<figure>
 		<img src="results/part5_phong_all.png" width="450">
@@ -297,6 +413,9 @@
 </div>
 
 <h3>Texture Mapping</h3>
+<p>
+	We can also map a texture onto the cloth and sphere as shown below.
+</p>
 <div class="gallery">
 	<figure>
 		<img src="img/texture_1.png" width="250">
@@ -315,6 +434,12 @@
 </div>
 
 <h3>Bump and Displacement Mapping</h3>
+<p>
+	Bump mapping will give the illusion of a heightened surface but it won't actually change any vertex positions.
+	This is apparent when we view the "edges" of the sphere which are still smooth.
+	In contrast, displacement mapping <i>will</i> actually change vertex positions.
+	Now, if we look at the "edges" of the sphere, we can see the 3D displacement of the textured surface.
+</p>
 <div class="gallery">
 	<figure>
 		<img src="results/part5_bump_cloth.png" width="250">
@@ -329,7 +454,15 @@
 		<figcaption> Displacement Mapping </figcaption>
 	</figure>
 </div>
+<p>
+	For both the low and high resolution spheres, the bump mapping shaders look fine.
+	But when we start to make changes to the geometry, as the displacement mapping shader does, the resolution starts to matter.
+	The resolution has an impact on how well the displacement mapping shader performs
+	because there needs to be enough geometry for the shader to work with. Otherwise, the sphere "edges" appear blocky.
 
+	In the upper right sphere (resolution = 16), the resolution is not high enough to cleanly define the textured surface displacement.
+	We can see that this is fixed in the high resolution displacement mapping sphere, however.
+</p>
 <div class="gallery">
 	<figure>
 		<img src="results/part5_bump_16.png" width="450">
